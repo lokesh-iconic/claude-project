@@ -1,0 +1,18 @@
+Problem Statement
+A support team wants incoming tickets automatically classified, routed, and drafted a first-response. Build this two ways: first as a deterministic workflow (fixed prompt chain), then as an agent using the Claude Agent SDK. Use the comparison to prove you know when each is the right architectural choice — not just how to build both.
+
+What This Proves You Can Do
+Apply the decision criteria for choosing a workflow versus an agent
+Construct an agent with the Claude Agent SDK, including a custom loop and at least one hook
+Use an agentic abstraction framework (e.g. LangGraph or PydanticAI) for at least one component
+Delegate a narrow subtask to a subagent and justify why it's a subagent and not inline logic
+Setup
+Set up API access and, separately, the Claude Agent SDK
+Assemble 15–20 sample support tickets covering clear-cut and ambiguous cases
+Build Steps
+Build the workflow version first: a fixed sequence — classify, route, draft — with no branching decisions made by the model beyond each individual step
+Build the agent version: give it access to classify/route/draft as tools and let it decide the sequence and whether to loop back
+Add a hook that intercepts the draft-response step to enforce a formatting rule deterministically, rather than trusting the prompt to always comply
+Delegate ambiguous-ticket classification to a subagent with a narrower, more specialized prompt than the main agent
+Rebuild one component using an agentic framework (LangGraph or PydanticAI) and note what it made easier or harder versus your hand-rolled version
+Run both systems against your full ticket set and log where their outputs diverge

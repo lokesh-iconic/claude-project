@@ -1,0 +1,20 @@
+Problem Statement
+A client wants an internal tool where employees upload a document and ask questions against it, with reliable session handling, sensible model configuration, and a codebase another engineer could pick up without a walkthrough. This is the largest domain on the exam — treat this as a real, shippable mini-application, not a script.
+
+What This Proves You Can Do
+Translate a business requirement into functional and infrastructure requirements
+Apply Claude API mechanics correctly — messages, tools, streaming, caching, and batch vs. realtime tradeoffs
+Apply core software engineering practice — REST API design, version control, code review discipline, refactoring
+Design a Claude application with sound session hygiene, schema design, and plugin/config management
+Setup
+Set up API access and a basic project repository with version control
+Pick a document type (PDF, contract, report) and gather 3–5 samples
+Build Steps
+Write a one-paragraph requirements spec: what the tool must do, what infrastructure it touches, and what "done" looks like — before writing code
+Build the core integration: document upload, question input, streamed response back to the user
+Design your session handling explicitly — decide when to restart a session, when to summarize, and when to persist, and document why
+Implement prompt caching for the document content so repeated questions against the same document don't re-pay the full context cost
+Design a JSON schema for any structured parts of the response (e.g. citations, confidence), and validate against it
+Set up configuration management: a CLAUDE.md or config file with model version pinning and prompt versioning, so a future prompt change is tracked, not silent
+Have a peer (or a second Claude session acting as reviewer) review your integration code for a real code-review pass, and fix at least one thing they flag
+Decide, and justify in a comment or README, whether this workload should ever move to the Message Batches API — most Q&A tools shouldn't, but you should be able to say why
