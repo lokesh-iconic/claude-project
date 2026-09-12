@@ -8,7 +8,7 @@
     prints the result to stdout without starting an interactive session.
 
 .EXAMPLE
-    .\claude_code\scripts\headless_summary.ps1
+    .\3_claude_code\scripts\headless_summary.ps1
 #>
 
 $ErrorActionPreference = "Stop"

@@ -28,7 +28,7 @@ if sys.platform == "win32" and hasattr(sys.stdout, "reconfigure"):
 from dotenv import load_dotenv, find_dotenv
 
 # Ensure .env is loaded from workspace root
-load_dotenv(find_dotenv(usecwd=True))
+load_dotenv(find_dotenv(usecwd=True), override=True)
 
 # Ensure the package root is importable
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))

@@ -21,7 +21,7 @@ This shows:
 
 You should see entries for:
 - `CLAUDE.md` (project root) ← our main project instructions
-- `agents_and_workflows/CLAUDE.md` ← loads on demand when reading files in that directory
+- `1_agents_and_workflows/CLAUDE.md` ← loads on demand when reading files in that directory
 - Auto memory directory (if enabled)
 
 ## Step 2: Verify Context with `/context`
@@ -40,9 +40,9 @@ This shows a **colored grid** of what's consuming the context window, including:
 ### Confirming the hierarchy
 
 1. At session start, only the **root CLAUDE.md** loads automatically
-2. Ask Claude to read a file in `agents_and_workflows/`:
+2. Ask Claude to read a file in `1_agents_and_workflows/`:
    ```
-   Read agents_and_workflows/shared.py
+   Read 1_agents_and_workflows/shared.py
    ```
 3. Run `/context` again — you should now see **both** CLAUDE.md files loaded
 

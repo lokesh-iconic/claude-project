@@ -56,7 +56,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from shared import Category, Priority, ClassificationResult
 from tickets import Ticket, TICKETS
 
-load_dotenv(find_dotenv(usecwd=True))
+load_dotenv(find_dotenv(usecwd=True), override=True)
 
 # ---------------------------------------------------------------------------
 # PydanticAI Agent Setup

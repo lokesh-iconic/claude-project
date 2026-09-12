@@ -30,7 +30,7 @@ if sys.platform == "win32" and hasattr(sys.stdout, "reconfigure"):
 from dotenv import load_dotenv, find_dotenv
 
 # Ensure .env is loaded from workspace root
-load_dotenv(find_dotenv(usecwd=True))
+load_dotenv(find_dotenv(usecwd=True), override=True)
 
 from rich.console import Console
 from rich.table import Table
@@ -41,7 +41,7 @@ from rich.text import Text
 console = Console(force_terminal=True, legacy_windows=False)
 
 
-# All paths are relative to this file's parent directory (claude_code/)
+# All paths are relative to this file's parent directory (3_claude_code/)
 BASE_DIR = Path(__file__).parent
 
 

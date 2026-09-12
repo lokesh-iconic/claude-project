@@ -31,9 +31,9 @@ inside this subdirectory.
 ## Running (from repo root)
 
 ```bash
-uv run python -m agents_and_workflows.workflow.pipeline
-uv run python -m agents_and_workflows.agent.runner
-uv run python -m agents_and_workflows.run_comparison
+uv run python .\1_agents_and_workflows\workflow\pipeline.py
+uv run python .\1_agents_and_workflows\agent\runner.py
+uv run python .\1_agents_and_workflows\run_comparison.py
 ```
 
 ## Output
