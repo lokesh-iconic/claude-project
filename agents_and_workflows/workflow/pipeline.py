@@ -17,7 +17,7 @@ import os
 import sys
 from typing import Optional
 
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 
 # Add parent dir to path for imports
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -29,7 +29,14 @@ from shared import (
 )
 from tickets import Ticket, TICKETS
 
-load_dotenv()
+# Ensure .env is loaded from workspace root
+load_dotenv(find_dotenv(usecwd=True))
+
+
+def _get_model() -> str:
+    """Return model identifier from environment or default to claude-3-5-sonnet."""
+    return os.getenv("CLAUDE_MODEL", os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022"))
+
 
 # ---------------------------------------------------------------------------
 # Mock responses for running without an API key
@@ -49,16 +56,40 @@ MOCK_CLASSIFICATIONS: dict[str, dict] = {
 }
 
 
+_client_instance = None
+_client_checked = False
+
+
 def _get_client():
-    """Get the Anthropic client, or None if in mock mode."""
+    """Get the Anthropic client, or None if in mock mode or if the key fails authentication."""
+    global _client_instance, _client_checked
+    if _client_checked:
+        return _client_instance
+
     api_key = os.getenv("ANTHROPIC_API_KEY", "")
     if not api_key or api_key.startswith("sk-ant-your"):
+        _client_checked = True
+        _client_instance = None
         return None
+
     try:
         import anthropic
-        return anthropic.Anthropic(api_key=api_key)
+        client = anthropic.Anthropic(api_key=api_key)
+        # Verify authentication with a lightweight check
+        try:
+            client.models.list(limit=1)
+            _client_instance = client
+        except anthropic.AuthenticationError as auth_err:
+            print(f"\n  [WARNING] ANTHROPIC_API_KEY from .env is invalid ({auth_err.message}).")
+            print("  [WARNING] Running in MOCK mode. To use live mode, update ANTHROPIC_API_KEY in .env.\n")
+            _client_instance = None
+        except Exception:
+            _client_instance = client
     except Exception:
-        return None
+        _client_instance = None
+
+    _client_checked = True
+    return _client_instance
 
 
 # ---------------------------------------------------------------------------
@@ -84,17 +115,20 @@ def classify(ticket: Ticket, client=None) -> ClassificationResult:
     In mock mode, uses keyword matching for deterministic results.
     """
     if client is not None:
-        response = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=300,
-            system=CLASSIFY_SYSTEM_PROMPT,
-            messages=[{
-                "role": "user",
-                "content": f"Subject: {ticket.subject}\n\nBody: {ticket.body}",
-            }],
-        )
-        data = json.loads(response.content[0].text)
-        return ClassificationResult(**data)
+        try:
+            response = client.messages.create(
+                model=_get_model(),
+                max_tokens=300,
+                system=CLASSIFY_SYSTEM_PROMPT,
+                messages=[{
+                    "role": "user",
+                    "content": f"Subject: {ticket.subject}\n\nBody: {ticket.body}",
+                }],
+            )
+            data = json.loads(response.content[0].text)
+            return ClassificationResult(**data)
+        except Exception as e:
+            print(f"    [Notice: Anthropic API error ({e}) — using mock classification]")
 
     # ── Mock mode ──
     subject_lower = (ticket.subject + " " + ticket.body).lower()
@@ -150,23 +184,26 @@ def route(ticket: Ticket, classification: ClassificationResult, client=None) -> 
     In mock mode, uses the CATEGORY_TO_TEAM mapping.
     """
     if client is not None:
-        response = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=200,
-            system=ROUTE_SYSTEM_PROMPT,
-            messages=[{
-                "role": "user",
-                "content": (
-                    f"Ticket subject: {ticket.subject}\n"
-                    f"Category: {classification.category.value}\n"
-                    f"Priority: {classification.priority.value}\n"
-                    f"Confidence: {classification.confidence}\n"
-                    f"Is ambiguous: {classification.is_ambiguous}"
-                ),
-            }],
-        )
-        data = json.loads(response.content[0].text)
-        return RoutingResult(**data)
+        try:
+            response = client.messages.create(
+                model=_get_model(),
+                max_tokens=200,
+                system=ROUTE_SYSTEM_PROMPT,
+                messages=[{
+                    "role": "user",
+                    "content": (
+                        f"Ticket subject: {ticket.subject}\n"
+                        f"Category: {classification.category.value}\n"
+                        f"Priority: {classification.priority.value}\n"
+                        f"Confidence: {classification.confidence}\n"
+                        f"Is ambiguous: {classification.is_ambiguous}"
+                    ),
+                }],
+            )
+            data = json.loads(response.content[0].text)
+            return RoutingResult(**data)
+        except Exception as e:
+            print(f"    [Notice: Anthropic API error ({e}) — using mock routing]")
 
     # ── Mock mode ──
     team = CATEGORY_TO_TEAM.get(classification.category, Team.GENERAL_SUPPORT)
@@ -209,27 +246,32 @@ def draft_response(
     In live mode, makes a single API call, then applies enforce_formatting().
     In mock mode, generates a template response and applies enforce_formatting().
     """
+    raw_draft = None
     if client is not None:
-        response = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=400,
-            system=DRAFT_SYSTEM_PROMPT,
-            messages=[{
-                "role": "user",
-                "content": (
-                    f"Customer name: {ticket.customer_name}\n"
-                    f"Subject: {ticket.subject}\n"
-                    f"Body: {ticket.body}\n"
-                    f"Category: {classification.category.value}\n"
-                    f"Priority: {classification.priority.value}\n"
-                    f"Assigned team: {routing.team.value}\n"
-                    f"Escalated: {routing.escalate}"
-                ),
-            }],
-        )
-        data = json.loads(response.content[0].text)
-        raw_draft = DraftResponse(**data)
-    else:
+        try:
+            response = client.messages.create(
+                model=_get_model(),
+                max_tokens=400,
+                system=DRAFT_SYSTEM_PROMPT,
+                messages=[{
+                    "role": "user",
+                    "content": (
+                        f"Customer name: {ticket.customer_name}\n"
+                        f"Subject: {ticket.subject}\n"
+                        f"Body: {ticket.body}\n"
+                        f"Category: {classification.category.value}\n"
+                        f"Priority: {classification.priority.value}\n"
+                        f"Assigned team: {routing.team.value}\n"
+                        f"Escalated: {routing.escalate}"
+                    ),
+                }],
+            )
+            data = json.loads(response.content[0].text)
+            raw_draft = DraftResponse(**data)
+        except Exception as e:
+            print(f"    [Notice: Anthropic API error ({e}) — using mock draft response]")
+
+    if raw_draft is None:
         # ── Mock mode ──
         raw_draft = DraftResponse(
             subject_line=f"Re: {ticket.subject}",

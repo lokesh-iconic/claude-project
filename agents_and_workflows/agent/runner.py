@@ -25,7 +25,9 @@ import os
 import sys
 from typing import Optional
 
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
+
+load_dotenv(find_dotenv(usecwd=True))
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -38,7 +40,11 @@ from agent.tools import TOOL_DEFINITIONS, TOOL_EXECUTORS, execute_classify_ticke
 from agent.hooks import create_hooks, DraftFormattingHook
 from agent.subagent import run_specialist_classifier
 
-load_dotenv()
+
+def _get_model() -> str:
+    """Return model identifier from environment or default to claude-3-5-sonnet."""
+    return os.getenv("CLAUDE_MODEL", os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022"))
+
 
 
 # ---------------------------------------------------------------------------
@@ -177,7 +183,7 @@ def run_agent_loop_live(ticket: Ticket, client, hooks: dict) -> tuple[dict, dict
 
     for iteration in range(max_iterations):
         response = client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model=_get_model(),
             max_tokens=1024,
             system=AGENT_SYSTEM_PROMPT,
             tools=TOOL_DEFINITIONS,
@@ -244,16 +250,39 @@ def run_agent_loop_live(ticket: Ticket, client, hooks: dict) -> tuple[dict, dict
 # Public Interface
 # ---------------------------------------------------------------------------
 
+_client_instance = None
+_client_checked = False
+
+
 def _get_client():
-    """Get the Anthropic client, or None if in mock mode."""
+    """Get the Anthropic client, or None if in mock mode or if the key fails authentication."""
+    global _client_instance, _client_checked
+    if _client_checked:
+        return _client_instance
+
     api_key = os.getenv("ANTHROPIC_API_KEY", "")
     if not api_key or api_key.startswith("sk-ant-your"):
+        _client_checked = True
+        _client_instance = None
         return None
+
     try:
         import anthropic
-        return anthropic.Anthropic(api_key=api_key)
+        client = anthropic.Anthropic(api_key=api_key)
+        try:
+            client.models.list(limit=1)
+            _client_instance = client
+        except anthropic.AuthenticationError as auth_err:
+            print(f"\n  [WARNING] ANTHROPIC_API_KEY from .env is invalid ({auth_err.message}).")
+            print("  [WARNING] Running in MOCK mode. To use live mode, update ANTHROPIC_API_KEY in .env.\n")
+            _client_instance = None
+        except Exception:
+            _client_instance = client
     except Exception:
-        return None
+        _client_instance = None
+
+    _client_checked = True
+    return _client_instance
 
 
 def process_ticket(ticket: Ticket, client=None, hooks: dict | None = None) -> TicketResult:
@@ -262,7 +291,12 @@ def process_ticket(ticket: Ticket, client=None, hooks: dict | None = None) -> Ti
         hooks = create_hooks()
 
     if client is not None:
-        classification, routing, draft = run_agent_loop_live(ticket, client, hooks)
+        try:
+            classification, routing, draft = run_agent_loop_live(ticket, client, hooks)
+        except Exception as e:
+            print(f"    [Notice: Anthropic API error in agent loop ({e}) — using mock agent]")
+            mock_agent = MockAgentLoop(hooks)
+            classification, routing, draft = mock_agent.process_ticket(ticket)
     else:
         mock_agent = MockAgentLoop(hooks)
         classification, routing, draft = mock_agent.process_ticket(ticket)

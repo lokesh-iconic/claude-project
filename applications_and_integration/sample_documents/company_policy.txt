@@ -1,0 +1,87 @@
+ACME CORPORATION — DATA SECURITY AND COMPLIANCE POLICY
+Policy Number: SEC-2025-001 | Version 2.1 | Effective: February 2025
+
+=== Section 1: Purpose and Scope ===
+
+1.1 Purpose
+This policy establishes the minimum security standards and compliance requirements for all employees, contractors, and third-party vendors who access Acme Corporation's information systems, data, or facilities.
+
+1.2 Scope
+This policy applies to all forms of information, whether digital or physical, including but not limited to: customer data, employee records, financial information, intellectual property, source code, and internal communications.
+
+=== Section 2: Data Classification ===
+
+2.1 Classification Levels
+All data must be classified into one of four levels:
+
+Level 1 - PUBLIC: Information intended for public consumption (marketing materials, press releases, public documentation).
+
+Level 2 - INTERNAL: Information for internal use that would not cause harm if disclosed (internal newsletters, non-sensitive meeting notes, general operational procedures).
+
+Level 3 - CONFIDENTIAL: Information that could cause competitive disadvantage or legal liability if disclosed (customer lists, financial projections, product roadmaps, employee compensation data).
+
+Level 4 - RESTRICTED: Highly sensitive information requiring maximum protection (PII/PHI subject to regulatory requirements, encryption keys, security credentials, M&A documents, trade secrets).
+
+2.2 Handling Requirements
+- PUBLIC: No special handling required
+- INTERNAL: Must not be shared outside the organization
+- CONFIDENTIAL: Encrypted in transit and at rest; access logged; shared only on need-to-know basis
+- RESTRICTED: End-to-end encryption; multi-factor authentication required; access requires manager and Security team approval; all access logged and audited quarterly
+
+=== Section 3: Access Control ===
+
+3.1 Principle of Least Privilege
+Access to systems and data shall be granted on a least-privilege basis. Employees shall receive only the minimum access necessary to perform their job functions.
+
+3.2 Authentication Requirements
+- All systems must enforce multi-factor authentication (MFA)
+- Passwords must be at least 14 characters with complexity requirements
+- Password rotation: every 90 days for standard accounts, every 30 days for privileged accounts
+- Biometric authentication is required for physical access to data centers
+
+3.3 Access Reviews
+- Quarterly access reviews for all systems containing CONFIDENTIAL or RESTRICTED data
+- Access must be revoked within 4 hours of employment termination
+- Privileged access (admin, root) requires annual recertification by the CISO
+
+=== Section 4: Incident Response ===
+
+4.1 Incident Classification
+- P1 (Critical): Active data breach, ransomware, system-wide outage
+- P2 (High): Suspected unauthorized access, failed security controls
+- P3 (Medium): Policy violation, phishing attempt (contained)
+- P4 (Low): Security advisory, minor configuration issue
+
+4.2 Response Timeline
+- P1: Immediate response, CISO notified within 15 minutes, incident commander assigned within 30 minutes
+- P2: Response within 1 hour, security team investigation within 4 hours
+- P3: Response within 4 hours, investigation within 24 hours
+- P4: Response within 24 hours, resolution within 5 business days
+
+4.3 Reporting Obligations
+- GDPR: Data protection authority notification within 72 hours of confirmed breach
+- CCPA: Affected California residents notified "in the most expedient time possible"
+- SEC: Material cybersecurity incidents reported within 4 business days (Form 8-K)
+- Internal: All security incidents logged in the Incident Management System (ServiceNow)
+
+=== Section 5: Compliance Requirements ===
+
+5.1 Regulatory Frameworks
+Acme Corporation maintains compliance with:
+- SOC 2 Type II (annual audit)
+- ISO 27001 (triennial certification with annual surveillance audits)
+- GDPR (for EU customer data)
+- CCPA (for California resident data)
+- HIPAA (where applicable to healthcare clients)
+
+5.2 Training Requirements
+- All employees: Annual security awareness training (mandatory, tracked in LMS)
+- Engineering: Secure coding practices training (annually)
+- Management: Data privacy and incident response training (annually)
+- New hires: Security onboarding within first 5 business days
+
+5.3 Audit and Monitoring
+- Continuous monitoring of all production systems via SIEM (Splunk)
+- Annual penetration testing by an independent third party
+- Quarterly vulnerability scans of all externally facing systems
+- Monthly review of access logs for RESTRICTED data systems

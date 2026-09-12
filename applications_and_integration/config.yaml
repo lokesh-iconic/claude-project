@@ -1,0 +1,66 @@
+# ============================================================================
+# DocuQuery Configuration
+# ============================================================================
+# This file pins the model version and prompt versions so that any change
+# is tracked in version control, not silent. A future prompt change shows
+# up as a diff in this file.
+# ============================================================================
+
+model:
+  # Pin to a specific model version — never use an alias like "claude-3-sonnet"
+  # that could silently change underneath you.
+  name: "claude-3-5-sonnet-20241022"
+  max_tokens: 2048
+  temperature: 0.2  # Low temperature for factual Q&A; higher values risk hallucination
+
+prompts:
+  # ── Prompt Versioning ──
+  # Each prompt version is stored here with a timestamp and change note.
+  # The active_version key selects which one is used at runtime.
+  # Old versions are kept for rollback and auditing.
+
+  system_v1:
+    text: >
+      You are a document analyst for an internal company tool. Employees upload
+      documents and ask questions. Answer based ONLY on the provided document.
+      If the answer is not in the document, say so explicitly.
+    created: "2025-06-01"
+    note: "Initial prompt — basic instruction"
+
+  system_v2:
+    text: >
+      You are DocuQuery, an internal document analyst. Employees upload business
+      documents (policies, contracts, reports, specs) and ask questions.
+
+      Rules:
+      1. Answer ONLY from the provided document. Never use outside knowledge.
+      2. Cite specific sections by name or number when possible.
+      3. If the answer is not in the document, say: "This information is not
+         covered in the uploaded document."
+      4. If the answer is partially covered, state what IS covered and what is missing.
+      5. Keep answers concise but complete. Use bullet points for multi-part answers.
+      6. When quoting, use quotation marks and reference the section.
+    created: "2025-08-15"
+    note: "Added citation rules, partial-answer handling, and formatting guidance"
+
+  active_version: "system_v2"
+
+session:
+  # ── Session Lifecycle Configuration ──
+  # max_history_tokens: hard cap on conversation history size
+  # summarize_threshold: when history exceeds this, older turns get summarized
+  # idle_timeout_minutes: sessions expire after this many minutes of inactivity
+  max_history_tokens: 50000
+  summarize_threshold: 40000
+  idle_timeout_minutes: 30
+
+cache:
+  # ── Prompt Caching ──
+  # When enabled, document content is placed in the system prompt with
+  # cache_control: {"type": "ephemeral"}. The first question pays the full
+  # input cost; subsequent questions against the same document hit the cache.
+  enabled: true
+  type: "ephemeral"
+  # Minimum document size (chars) to enable caching — very short docs
+  # don't benefit enough to justify the cache write cost.
+  min_document_length: 500
