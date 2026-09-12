@@ -9,7 +9,7 @@ Rather than using Claude Code casually, operate it deliberately: configure the C
 ## Project Structure
 
 ```
-claude_code/
+3_claude_code/
 ├── README.md                               ← You are here
 ├── validate_setup.py                       ← Run this to validate the configuration
 ├── CLAUDE.md                               ← Project-level CLAUDE.md
@@ -35,10 +35,10 @@ claude_code/
 uv sync
 
 # 2. Validate the entire setup (checks all config files, settings, commands)
-uv run python -m claude_code.validate_setup
+uv run python .\3_claude_code\validate_setup.py
 
 # 3. Validate and also test headless mode with a live Claude Code call
-uv run python -m claude_code.validate_setup --headless
+uv run python .\3_claude_code\validate_setup.py --headless
 ```
 
 ## Setup (Activating the Configuration)
@@ -46,9 +46,9 @@ uv run python -m claude_code.validate_setup --headless
 To actually use these config files with Claude Code, copy them to the repo root:
 
 ```bash
-copy claude_code\CLAUDE.md .\CLAUDE.md
-xcopy claude_code\.claude .\.claude /E /I
-copy claude_code\sample_subfolder\CLAUDE.md agents_and_workflows\CLAUDE.md
+copy 3_claude_code\CLAUDE.md .\CLAUDE.md
+xcopy 3_claude_code\.claude .\.claude /E /I
+copy 3_claude_code\sample_subfolder\CLAUDE.md 1_agents_and_workflows\CLAUDE.md
 ```
 
 Then verify in an interactive session:
@@ -111,8 +111,8 @@ Two scripts that run Claude Code non-interactively, capturing output as you woul
 
 | Script | Language | Usage |
 |--------|----------|-------|
-| [`scripts/headless_summary.py`](scripts/headless_summary.py) | Python | `uv run python claude_code/scripts/headless_summary.py` |
-| [`scripts/headless_summary.ps1`](scripts/headless_summary.ps1) | PowerShell | `.\claude_code\scripts\headless_summary.ps1` |
+| [`scripts/headless_summary.py`](scripts/headless_summary.py) | Python | `uv run python .\3_claude_code\scripts\headless_summary.py` |
+| [`scripts/headless_summary.ps1`](scripts/headless_summary.ps1) | PowerShell | `.\3_claude_code\scripts\headless_summary.ps1` |
 
 Both scripts:
 - Run `claude -p "..."` as a subprocess

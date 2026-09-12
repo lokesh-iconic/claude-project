@@ -12,7 +12,7 @@ Incoming support tickets need to be automatically classified, routed to the righ
 ## Project Structure
 
 ```
-agents_and_workflows/
+1_agents_and_workflows/
 ├── README.md                          ← You are here
 ├── requirements.txt                   ← Dependencies
 ├── .env.example                       ← API key template
@@ -40,35 +40,23 @@ agents_and_workflows/
 ## Setup
 
 ```bash
-# 1. Create a virtual environment
-python -m venv .venv
-.venv\Scripts\activate            # Windows
-# source .venv/bin/activate       # macOS/Linux
+# From the repository root:
+uv sync
 
-# 2. Install dependencies
-pip install -r requirements.txt
-
-# 3. (Optional) Configure API key for live mode
-copy .env.example .env
-# Edit .env and add your Anthropic API key
-
+# (Optional) Configure API key for live mode in .env
 # Without an API key, everything runs in mock mode with deterministic responses
 ```
 
 ## Running
 
 ```bash
-# Run the workflow pipeline only
-python -m workflow.pipeline
-
-# Run the agent system only
-python -m agent.runner
-
-# Run the PydanticAI classifier only
-python -m pydantic_ai_component.classifier
-
 # Run the full comparison (recommended)
-python run_comparison.py
+uv run python .\1_agents_and_workflows\run_comparison.py
+
+# Or run individual modules:
+uv run python .\1_agents_and_workflows\workflow\pipeline.py
+uv run python .\1_agents_and_workflows\agent\runner.py
+uv run python .\1_agents_and_workflows\pydantic_ai_component\classifier.py
 ```
 
 ## Architectural Decisions

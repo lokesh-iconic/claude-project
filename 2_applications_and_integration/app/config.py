@@ -18,7 +18,7 @@ from typing import Any
 import yaml
 from dotenv import load_dotenv, find_dotenv
 
-load_dotenv(find_dotenv(usecwd=True))
+load_dotenv(find_dotenv(usecwd=True), override=True)
 
 # ---------------------------------------------------------------------------
 # Load config.yaml

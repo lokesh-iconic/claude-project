@@ -8,11 +8,10 @@ An internal document Q&A tool where employees upload a document and ask question
 # From the claude_project root directory:
 
 # 1. Install dependencies
-uv add fastapi uvicorn pyyaml python-multipart
+uv sync
 
 # 2. Start the server
-cd applications_and_integration
-uv run python -m app.main
+uv run python -m uvicorn app.main:app --app-dir 2_applications_and_integration
 
 # 3. Open in browser
 # Swagger UI: http://localhost:8000/docs
@@ -41,7 +40,7 @@ curl -X POST http://localhost:8000/api/v1/sessions/{session_id}/ask/stream \
 ## Project Structure
 
 ```
-applications_and_integration/
+2_applications_and_integration/
 ├── README.md                       <- You are here
 ├── requirements_spec.md            <- One-paragraph functional spec
 ├── config.yaml                     <- Model pinning + prompt versioning

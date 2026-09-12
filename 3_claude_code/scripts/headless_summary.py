@@ -7,12 +7,12 @@ and prints the result to stdout, making it suitable for CI/CD, cron jobs,
 or any automation workflow.
 
 Usage:
-    uv run python claude_code/scripts/headless_summary.py
+    uv run python 3_claude_code/scripts/headless_summary.py
 
 What it does:
     1. Runs `claude -p "..."` as a subprocess
     2. Captures the structured output
-    3. Saves the result to claude_code/scripts/output/headless_result.txt
+    3. Saves the result to 3_claude_code/scripts/output/headless_result.txt
     4. Prints a summary to the console
 """
 
@@ -28,7 +28,7 @@ from pathlib import Path
 from dotenv import load_dotenv, find_dotenv
 
 # Ensure .env is loaded from workspace root
-load_dotenv(find_dotenv(usecwd=True))
+load_dotenv(find_dotenv(usecwd=True), override=True)
 
 
 def run_headless(prompt: str, output_format: str = "text") -> str:

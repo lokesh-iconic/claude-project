@@ -27,7 +27,7 @@ from typing import Optional
 
 from dotenv import load_dotenv, find_dotenv
 
-load_dotenv(find_dotenv(usecwd=True))
+load_dotenv(find_dotenv(usecwd=True), override=True)
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -271,11 +271,24 @@ def _get_client():
         client = anthropic.Anthropic(api_key=api_key)
         try:
             client.models.list(limit=1)
+            # Quick 1-token test to verify active credit balance
+            client.messages.create(
+                model=os.getenv("CLAUDE_MODEL", os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022")),
+                max_tokens=1,
+                messages=[{"role": "user", "content": "hi"}],
+            )
             _client_instance = client
         except anthropic.AuthenticationError as auth_err:
             print(f"\n  [WARNING] ANTHROPIC_API_KEY from .env is invalid ({auth_err.message}).")
             print("  [WARNING] Running in MOCK mode. To use live mode, update ANTHROPIC_API_KEY in .env.\n")
             _client_instance = None
+        except anthropic.BadRequestError as req_err:
+            if "credit balance is too low" in str(req_err).lower():
+                print("\n  [INFO] ANTHROPIC_API_KEY is authenticated, but your Anthropic account credit balance is $0.")
+                print("  [INFO] Running smoothly in MOCK mode ($0 cost). To make live API calls, purchase credits at console.anthropic.com/settings/billing.\n")
+                _client_instance = None
+            else:
+                _client_instance = client
         except Exception:
             _client_instance = client
     except Exception:

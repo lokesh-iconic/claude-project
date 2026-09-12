@@ -10,23 +10,22 @@ agent architectures, and production-grade application design.
 uv sync
 
 # Run any module
-uv run python -m agents_and_workflows.workflow.pipeline
-uv run python -m agents_and_workflows.agent.runner
-uv run python -m agents_and_workflows.run_comparison
-uv run python -m applications_and_integration.app.main
+uv run python .\1_agents_and_workflows\run_comparison.py
+uv run python -m uvicorn app.main:app --app-dir 2_applications_and_integration
+uv run python .\3_claude_code\validate_setup.py
 ```
 
 ## Test
 
 ```bash
-uv run pytest
-uv run pytest applications_and_integration/tests/
+uv run pytest 2_applications_and_integration/tests/
 ```
 
 ## Project Structure
 
-- `agents_and_workflows/` — Support ticket triage: workflow vs. agent comparison
-- `applications_and_integration/` — DocuQuery: document Q&A with streaming, caching, sessions
+- `1_agents_and_workflows/` — Support ticket triage: workflow vs. agent comparison
+- `2_applications_and_integration/` — DocuQuery: document Q&A with streaming, caching, sessions
+- `3_claude_code/` — Claude Code CLI: deliberate CLAUDE.md hierarchy and tools
 
 ## Coding Standards
 
