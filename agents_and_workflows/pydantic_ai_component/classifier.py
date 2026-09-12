@@ -49,14 +49,14 @@ import sys
 from dataclasses import dataclass
 from typing import Optional
 
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from shared import Category, Priority, ClassificationResult
 from tickets import Ticket, TICKETS
 
-load_dotenv()
+load_dotenv(find_dotenv(usecwd=True))
 
 # ---------------------------------------------------------------------------
 # PydanticAI Agent Setup
@@ -95,7 +95,8 @@ def _build_agent() -> "Agent[ClassifierDeps, ClassificationResult]":
     # Determine the model to use
     api_key = os.getenv("ANTHROPIC_API_KEY", "")
     if api_key and not api_key.startswith("sk-ant-your"):
-        model = "anthropic:claude-sonnet-4-20250514"
+        chosen_model = os.getenv("CLAUDE_MODEL", os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022"))
+        model = f"anthropic:{chosen_model}"
     else:
         model = "test"  # PydanticAI's built-in test model
 

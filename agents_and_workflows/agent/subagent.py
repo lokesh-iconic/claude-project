@@ -37,9 +37,19 @@ import json
 import os
 import sys
 
+from dotenv import load_dotenv, find_dotenv
+
+load_dotenv(find_dotenv(usecwd=True))
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from shared import ClassificationResult, Category, Priority
+
+
+def _get_model() -> str:
+    """Return model identifier from environment or default to claude-3-5-sonnet."""
+    return os.getenv("CLAUDE_MODEL", os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022"))
+
 
 
 # ---------------------------------------------------------------------------
@@ -139,23 +149,26 @@ def run_specialist_classifier(
         dict with classification fields plus topics_detected
     """
     if client is not None:
-        user_content = (
-            f"Ticket ID: {ticket_id}\n"
-            f"Subject: {subject}\n"
-            f"Body: {body}\n"
-        )
-        if initial_category:
-            user_content += f"\nInitial best-guess category: {initial_category}"
-        if reason_for_escalation:
-            user_content += f"\nReason for specialist review: {reason_for_escalation}"
+        try:
+            user_content = (
+                f"Ticket ID: {ticket_id}\n"
+                f"Subject: {subject}\n"
+                f"Body: {body}\n"
+            )
+            if initial_category:
+                user_content += f"\nInitial best-guess category: {initial_category}"
+            if reason_for_escalation:
+                user_content += f"\nReason for specialist review: {reason_for_escalation}"
 
-        response = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=500,
-            system=SPECIALIST_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": user_content}],
-        )
-        return json.loads(response.content[0].text)
+            response = client.messages.create(
+                model=_get_model(),
+                max_tokens=500,
+                system=SPECIALIST_SYSTEM_PROMPT,
+                messages=[{"role": "user", "content": user_content}],
+            )
+            return json.loads(response.content[0].text)
+        except Exception as e:
+            print(f"    [Notice: Anthropic API error in specialist subagent ({e}) — using mock fallback]")
 
     # ── Mock mode: deeper analysis simulation ──
     text = (subject + " " + body).lower()

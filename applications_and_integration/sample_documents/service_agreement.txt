@@ -1,0 +1,78 @@
+MASTER SERVICES AGREEMENT
+Between Acme Corporation ("Provider") and GlobalTech Industries ("Client")
+Effective Date: March 1, 2025
+Agreement Number: MSA-2025-0142
+
+=== Article 1: Scope of Services ===
+
+1.1 The Provider agrees to deliver the software platform known as "Acme Analytics Suite" (the "Platform") to the Client, including installation, configuration, training, and ongoing support as described in Exhibit A.
+
+1.2 The scope of services includes:
+(a) Deployment of the Platform on Client's cloud infrastructure (AWS or Azure)
+(b) Data migration from Client's existing analytics tool (up to 500GB)
+(c) Configuration of up to 25 custom dashboards
+(d) Training for up to 50 end users (remote sessions, recorded)
+(e) 12 months of technical support (Tier 1 and Tier 2)
+
+1.3 Any services not explicitly listed in this Agreement or Exhibit A shall be considered out of scope and subject to a separate Statement of Work (SOW) and additional fees.
+
+=== Article 2: Term and Termination ===
+
+2.1 This Agreement shall commence on the Effective Date and continue for an initial term of 36 months ("Initial Term").
+
+2.2 After the Initial Term, this Agreement shall automatically renew for successive 12-month periods ("Renewal Terms") unless either party provides written notice of non-renewal at least 90 days before the end of the then-current term.
+
+2.3 Either party may terminate this Agreement for cause if the other party materially breaches any provision and fails to cure such breach within 30 days of receiving written notice.
+
+2.4 The Client may terminate this Agreement for convenience upon 60 days' written notice, subject to payment of an early termination fee equal to 25% of the remaining contract value.
+
+=== Article 3: Fees and Payment ===
+
+3.1 The Client shall pay the Provider the following fees:
+(a) Platform License Fee: $180,000 per year, billed annually in advance
+(b) Implementation Fee: $45,000, billed upon project kickoff (non-refundable)
+(c) Training Fee: $15,000, billed upon completion of training sessions
+(d) Support Fee: Included in the Platform License Fee for Tier 1 and Tier 2. Tier 3 (on-site) support is billed at $250/hour.
+
+3.2 All invoices are due within 30 days of receipt (Net 30). Late payments shall accrue interest at 1.5% per month or the maximum rate permitted by law, whichever is lower.
+
+3.3 Fees shall increase by no more than 5% annually upon each Renewal Term, with 60 days' advance written notice.
+
+=== Article 4: Intellectual Property ===
+
+4.1 All intellectual property rights in the Platform, including source code, documentation, and derivative works, shall remain the exclusive property of the Provider.
+
+4.2 The Provider grants the Client a non-exclusive, non-transferable license to use the Platform during the term of this Agreement, solely for Client's internal business purposes.
+
+4.3 Any custom configurations, dashboards, or integrations developed specifically for the Client ("Custom Work") shall be owned by the Client, provided all fees have been paid in full.
+
+=== Article 5: Data Protection and Security ===
+
+5.1 The Provider shall implement and maintain industry-standard security measures, including encryption at rest (AES-256) and in transit (TLS 1.3), to protect Client data.
+
+5.2 The Provider shall comply with all applicable data protection laws, including GDPR, CCPA, and any regulations applicable to Client's industry.
+
+5.3 In the event of a data breach affecting Client data, the Provider shall notify the Client within 48 hours of discovery and cooperate fully in investigation and remediation.
+
+5.4 Upon termination, the Provider shall return or securely destroy all Client data within 30 days, at Client's election, and provide written certification of destruction.
+
+=== Article 6: Service Level Agreement (SLA) ===
+
+6.1 The Provider guarantees 99.9% uptime for the Platform, measured monthly, excluding scheduled maintenance windows.
+
+6.2 Scheduled maintenance shall not exceed 4 hours per month and shall be performed between 2:00 AM and 6:00 AM ET on Sundays, with 48 hours' advance notice.
+
+6.3 SLA Credits:
+- 99.5% - 99.9% uptime: 5% credit on monthly license fee
+- 99.0% - 99.5% uptime: 15% credit on monthly license fee
+- Below 99.0% uptime: 30% credit on monthly license fee
+
+6.4 SLA credits shall not exceed 30% of the monthly license fee and are the Client's sole and exclusive remedy for downtime.
+
+=== Article 7: Limitation of Liability ===
+
+7.1 NEITHER PARTY SHALL BE LIABLE FOR INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, REGARDLESS OF THE CAUSE OF ACTION OR THE THEORY OF LIABILITY.
+
+7.2 The Provider's total aggregate liability under this Agreement shall not exceed the total fees paid by the Client during the 12-month period immediately preceding the claim.
+
+7.3 The limitations in this Article shall not apply to breaches of confidentiality obligations, data protection obligations, or intellectual property infringement.

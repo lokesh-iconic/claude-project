@@ -1,0 +1,105 @@
+ACME ANALYTICS PLATFORM — TECHNICAL SPECIFICATION
+Version 3.0 | API Reference and Architecture Guide
+
+=== Section 1: Architecture Overview ===
+
+1.1 System Architecture
+The Acme Analytics Platform follows a microservices architecture deployed on Kubernetes (EKS). The system consists of the following core services:
+- API Gateway (Kong): Handles authentication, rate limiting, and request routing
+- Query Engine: Processes analytical queries against the data warehouse
+- Ingestion Service: Handles data pipeline orchestration (batch and streaming)
+- Dashboard Service: Manages dashboard configurations and rendering
+- Auth Service: OAuth 2.0 / OIDC authentication and authorization
+
+1.2 Technology Stack
+- Backend: Python 3.12 (FastAPI), Go (Query Engine)
+- Database: PostgreSQL 16 (metadata), ClickHouse (analytics data warehouse)
+- Cache: Redis 7.x (session cache, query result cache)
+- Message Queue: Apache Kafka (event streaming, data ingestion)
+- Frontend: React 18, TypeScript, D3.js (visualizations)
+- Infrastructure: AWS EKS, Terraform, ArgoCD (GitOps)
+
+=== Section 2: API Reference ===
+
+2.1 Authentication
+All API requests must include a Bearer token in the Authorization header. Tokens are obtained via the OAuth 2.0 authorization code flow or client credentials flow.
+
+Rate limits:
+- Standard tier: 100 requests/minute
+- Enterprise tier: 1,000 requests/minute
+- Burst allowance: 2x rate limit for 10-second windows
+
+2.2 Core Endpoints
+
+POST /api/v3/queries
+Execute an analytical query. Accepts SQL-like syntax with extensions.
+Request body: { "query": string, "parameters": object, "timeout_ms": int }
+Response: { "data": array, "metadata": { "rows": int, "execution_ms": int } }
+
+GET /api/v3/dashboards
+List all dashboards accessible to the authenticated user.
+Query parameters: page (int), per_page (int, max 100), filter (string)
+Response: { "dashboards": array, "total": int, "page": int }
+
+POST /api/v3/dashboards
+Create a new dashboard.
+Request body: { "name": string, "description": string, "widgets": array }
+Response: { "id": string, "created_at": datetime }
+
+POST /api/v3/data/ingest
+Submit data for ingestion. Supports JSON, CSV, and Parquet formats.
+Request body: multipart/form-data with file upload
+Max file size: 500MB per request
+Response: { "job_id": string, "status": "queued", "estimated_time_ms": int }
+
+2.3 Webhook Events
+The platform supports webhooks for the following events:
+- query.completed: Fired when an async query finishes
+- dashboard.shared: Fired when a dashboard is shared with a user
+- data.ingested: Fired when a data ingestion job completes
+- alert.triggered: Fired when a metric alert threshold is crossed
+
+Webhook payloads are signed with HMAC-SHA256 using the secret configured in Settings > Integrations.
+
+=== Section 3: Data Model ===
+
+3.1 Data Sources
+Supported data source types:
+- PostgreSQL, MySQL, SQL Server (direct connection)
+- S3, GCS (file-based: CSV, Parquet, JSON)
+- Kafka (streaming ingestion)
+- REST API (polling-based ingestion)
+
+3.2 Schema Management
+Tables are organized into namespaces. Each namespace has:
+- Owner: The team or user responsible for the data
+- Retention policy: How long data is kept (default: 365 days)
+- Access control: Row-level and column-level permissions
+
+3.3 Query Language Extensions
+Beyond standard SQL, the query engine supports:
+- WINDOW functions with custom frame specifications
+- APPROXIMATE aggregations (HyperLogLog for COUNT DISTINCT)
+- TIME_BUCKET() for time-series aggregation
+- FILL() for gap-filling in time-series data
+
+=== Section 4: Deployment and Operations ===
+
+4.1 Deployment
+Deployments follow a GitOps workflow:
+1. Code merged to main branch triggers CI pipeline (GitHub Actions)
+2. CI builds container images, runs tests, pushes to ECR
+3. ArgoCD detects manifest changes and deploys to staging
+4. After smoke tests pass, production deploy requires manual approval
+
+4.2 Monitoring
+- Metrics: Prometheus + Grafana (CPU, memory, request latency, error rates)
+- Logging: Structured JSON logs shipped to Elasticsearch via Fluentd
+- Tracing: OpenTelemetry with Jaeger for distributed request tracing
+- Alerting: PagerDuty integration for P1/P2 incidents
+
+4.3 Disaster Recovery
+- RPO (Recovery Point Objective): 1 hour
+- RTO (Recovery Time Objective): 4 hours
+- Daily automated backups to cross-region S3 bucket
+- Quarterly disaster recovery drills documented in runbook

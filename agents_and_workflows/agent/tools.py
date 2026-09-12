@@ -14,6 +14,10 @@ import json
 import os
 import sys
 
+from dotenv import load_dotenv, find_dotenv
+
+load_dotenv(find_dotenv(usecwd=True))
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from shared import (
@@ -21,6 +25,12 @@ from shared import (
     ClassificationResult, RoutingResult, DraftResponse,
     CATEGORY_TO_TEAM,
 )
+
+
+def _get_model() -> str:
+    """Return model identifier from environment or default to claude-3-5-sonnet."""
+    return os.getenv("CLAUDE_MODEL", os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022"))
+
 
 # ---------------------------------------------------------------------------
 # Tool Schemas (JSON Schema format for Anthropic API)
@@ -129,22 +139,25 @@ TOOL_DEFINITIONS = [
 def execute_classify_ticket(args: dict, client=None) -> dict:
     """Execute the classify_ticket tool."""
     if client is not None:
-        response = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=300,
-            system=(
-                "You are a support ticket classifier. Analyze the ticket and return "
-                "a JSON object with: category (billing/technical/account/feature_request/general), "
-                "priority (low/medium/high/urgent), confidence (0-1 float), "
-                "reasoning (one sentence), is_ambiguous (boolean). "
-                "Return ONLY valid JSON."
-            ),
-            messages=[{
-                "role": "user",
-                "content": f"Subject: {args['subject']}\n\nBody: {args['body']}",
-            }],
-        )
-        return json.loads(response.content[0].text)
+        try:
+            response = client.messages.create(
+                model=_get_model(),
+                max_tokens=300,
+                system=(
+                    "You are a support ticket classifier. Analyze the ticket and return "
+                    "a JSON object with: category (billing/technical/account/feature_request/general), "
+                    "priority (low/medium/high/urgent), confidence (0-1 float), "
+                    "reasoning (one sentence), is_ambiguous (boolean). "
+                    "Return ONLY valid JSON."
+                ),
+                messages=[{
+                    "role": "user",
+                    "content": f"Subject: {args['subject']}\n\nBody: {args['body']}",
+                }],
+            )
+            return json.loads(response.content[0].text)
+        except Exception as e:
+            print(f"    [Notice: Anthropic API error in classify tool ({e}) — using mock fallback]")
 
     # Mock mode
     text = (args.get("subject", "") + " " + args.get("body", "")).lower()
@@ -171,20 +184,23 @@ def execute_classify_ticket(args: dict, client=None) -> dict:
 def execute_route_ticket(args: dict, client=None) -> dict:
     """Execute the route_ticket tool."""
     if client is not None:
-        response = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=200,
-            system=(
-                "You are a ticket router. Given category and priority, assign a team "
-                "(billing/engineering/account_mgmt/product/general_support) and decide "
-                "if escalation is needed. Return JSON with: team, escalate (bool), routing_reason."
-            ),
-            messages=[{
-                "role": "user",
-                "content": json.dumps(args),
-            }],
-        )
-        return json.loads(response.content[0].text)
+        try:
+            response = client.messages.create(
+                model=_get_model(),
+                max_tokens=200,
+                system=(
+                    "You are a ticket router. Given category and priority, assign a team "
+                    "(billing/engineering/account_mgmt/product/general_support) and decide "
+                    "if escalation is needed. Return JSON with: team, escalate (bool), routing_reason."
+                ),
+                messages=[{
+                    "role": "user",
+                    "content": json.dumps(args),
+                }],
+            )
+            return json.loads(response.content[0].text)
+        except Exception as e:
+            print(f"    [Notice: Anthropic API error in route tool ({e}) — using mock fallback]")
 
     # Mock mode
     cat = args.get("category", "general")
@@ -209,25 +225,28 @@ def execute_route_ticket(args: dict, client=None) -> dict:
 def execute_draft_response(args: dict, client=None) -> dict:
     """Execute the draft_response tool (before hook formatting)."""
     if client is not None:
-        response = client.messages.create(
-            model="claude-sonnet-4-20250514",
-            max_tokens=400,
-            system=(
-                "Write a professional, empathetic customer support response. "
-                "Keep it under 150 words. Return JSON with: subject_line, body, internal_notes."
-            ),
-            messages=[{
-                "role": "user",
-                "content": (
-                    f"Customer: {args.get('customer_name', 'Customer')}\n"
-                    f"Subject: {args.get('ticket_subject', '')}\n"
-                    f"Body: {args.get('ticket_body', '')}\n"
-                    f"Category: {args.get('category', '')}\n"
-                    f"Team: {args.get('team', '')}"
+        try:
+            response = client.messages.create(
+                model=_get_model(),
+                max_tokens=400,
+                system=(
+                    "Write a professional, empathetic customer support response. "
+                    "Keep it under 150 words. Return JSON with: subject_line, body, internal_notes."
                 ),
-            }],
-        )
-        return json.loads(response.content[0].text)
+                messages=[{
+                    "role": "user",
+                    "content": (
+                        f"Customer: {args.get('customer_name', 'Customer')}\n"
+                        f"Subject: {args.get('ticket_subject', '')}\n"
+                        f"Body: {args.get('ticket_body', '')}\n"
+                        f"Category: {args.get('category', '')}\n"
+                        f"Team: {args.get('team', '')}"
+                    ),
+                }],
+            )
+            return json.loads(response.content[0].text)
+        except Exception as e:
+            print(f"    [Notice: Anthropic API error in draft tool ({e}) — using mock fallback]")
 
     # Mock mode
     return {
