@@ -58,6 +58,28 @@ claude
 # Type:  /context
 ```
 
+## Assignment Requirements Mapping
+
+> Reference: [`3_claude_code.txt`](../3_claude_code.txt)
+
+### What This Proves
+
+| Requirement | Where It's Demonstrated |
+|-------------|------------------------|
+| Configure the CLAUDE.md hierarchy correctly across user, project, and directory scope | [`CLAUDE.md`](CLAUDE.md) (project-level) + [`sample_subfolder/CLAUDE.md`](sample_subfolder/CLAUDE.md) (directory-level) |
+| Use Claude Code's core components -- Rules, Skills, Commands, Agents, Agent Memory -- deliberately | [`.claude/settings.json`](.claude/settings.json) (Rules), [`.claude/commands/`](.claude/commands/) (Commands), [`verify_memory.md`](verify_memory.md) (Memory) |
+| Operate Claude Code in headless and streaming mode, not just interactively | [`scripts/headless_summary.py`](scripts/headless_summary.py) + [`scripts/headless_summary.ps1`](scripts/headless_summary.ps1) |
+
+### Build Steps
+
+| Step | Requirement | Implementation |
+|------|-------------|----------------|
+| 1 | Initialize the repository for Claude Code and configure settings.json | [`.claude/settings.json`](.claude/settings.json) — permissions (allow/deny), [`.claude/settings.local.json`](.claude/settings.local.json) — local overrides |
+| 2 | Create a project-level CLAUDE.md, then a directory-level CLAUDE.md for one subfolder with different local conventions | [`CLAUDE.md`](CLAUDE.md) (project conventions) + [`sample_subfolder/CLAUDE.md`](sample_subfolder/CLAUDE.md) (agent-specific rules) |
+| 3 | Create a custom slash command for a task you'd otherwise repeat manually | [`.claude/commands/summarize-changes.md`](.claude/commands/summarize-changes.md) — `/project:summarize-changes` |
+| 4 | Run a task in headless mode (-p) and capture the output programmatically | [`scripts/headless_summary.py`](scripts/headless_summary.py) (Python) + [`scripts/headless_summary.ps1`](scripts/headless_summary.ps1) (PowerShell) |
+| 5 | Use /memory to confirm which configuration files are actually loaded | [`verify_memory.md`](verify_memory.md) — step-by-step guide using `/memory`, `/context`, `/status` |
+
 ## What Was Built
 
 ### 1. Repository Initialization & Settings (`settings.json`)

@@ -74,6 +74,19 @@ curl -X POST http://localhost:8000/api/v1/sessions/{session_id}/ask/stream \
 
 ## Assignment Requirements Mapping
 
+> Reference: [`2_applications_and_integration.txt`](../2_applications_and_integration.txt)
+
+### What This Proves
+
+| Requirement | Where It's Demonstrated |
+|-------------|------------------------|
+| Translate a business requirement into functional and infrastructure requirements | [`requirements_spec.md`](requirements_spec.md) — written before any code |
+| Apply Claude API mechanics correctly — messages, tools, streaming, caching, and batch vs. realtime tradeoffs | [`app/claude_client.py`](app/claude_client.py) (streaming + caching), [Batches API decision](#8-message-batches-api----decision-and-justification) |
+| Apply core software engineering practice — REST API design, version control, code review discipline, refactoring | [`app/routes.py`](app/routes.py) (REST API), [`code_review.md`](code_review.md) (peer review + fixes) |
+| Design a Claude application with sound session hygiene, schema design, and plugin/config management | [`app/session.py`](app/session.py) (sessions), [`app/models.py`](app/models.py) (schemas), [`config.yaml`](config.yaml) (config) |
+
+### Build Steps
+
 ### 1. Requirements Spec
 See [`requirements_spec.md`](requirements_spec.md) -- written before any code.
 

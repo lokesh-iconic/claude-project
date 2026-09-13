@@ -99,6 +99,37 @@ See the detailed analysis in [`pydantic_ai_component/classifier.py`](pydantic_ai
 
 **TL;DR**: PydanticAI excels at structured output validation and reduces boilerplate for tool registration. It's less ideal when you need fine-grained control over the prompt or want full visibility into the message flow.
 
+## Assignment Requirements Mapping
+
+> Reference: [`1_agents_and_workflows.txt`](../1_agents_and_workflows.txt)
+
+### What This Proves
+
+| Requirement | Where It's Demonstrated |
+|-------------|------------------------|
+| Apply the decision criteria for choosing a workflow versus an agent | [Workflow vs. Agent table](#workflow-vs-agent-when-to-use-which) above — documents when each is the right choice |
+| Construct an agent with the Claude Agent SDK, including a custom loop and at least one hook | [`agent/runner.py`](agent/runner.py) (agentic loop), [`agent/hooks.py`](agent/hooks.py) (`PostToolUse` hook) |
+| Use an agentic abstraction framework (e.g. LangGraph or PydanticAI) for at least one component | [`pydantic_ai_component/classifier.py`](pydantic_ai_component/classifier.py) — classification rebuilt with PydanticAI |
+| Delegate a narrow subtask to a subagent and justify why it's a subagent and not inline logic | [`agent/subagent.py`](agent/subagent.py) — see [justification above](#why-a-subagent-for-ambiguous-tickets-not-inline-logic) |
+
+### Build Steps
+
+| Step | Requirement | Implementation |
+|------|-------------|----------------|
+| 1 | Build the workflow version first: a fixed classify → route → draft sequence | [`workflow/pipeline.py`](workflow/pipeline.py) — deterministic 3-step pipeline |
+| 2 | Build the agent version: give it classify/route/draft as tools, let it decide the sequence | [`agent/runner.py`](agent/runner.py) + [`agent/tools.py`](agent/tools.py) — tool-calling loop |
+| 3 | Add a hook that intercepts the draft-response step to enforce formatting deterministically | [`agent/hooks.py`](agent/hooks.py) — `DraftFormattingHook` as `PostToolUse` |
+| 4 | Delegate ambiguous-ticket classification to a subagent with a specialized prompt | [`agent/subagent.py`](agent/subagent.py) — specialist classifier with few-shot examples |
+| 5 | Rebuild one component using an agentic framework and note what it made easier/harder | [`pydantic_ai_component/classifier.py`](pydantic_ai_component/classifier.py) — see module docstring |
+| 6 | Run both systems against your full ticket set and log where their outputs diverge | [`run_comparison.py`](run_comparison.py) → `output/comparison.md` |
+
+### Setup
+
+| Requirement | Implementation |
+|-------------|----------------|
+| Set up API access and the Claude Agent SDK | Root `.env` file + `uv sync` installs `anthropic` and `pydantic-ai` |
+| Assemble 15-20 sample support tickets covering clear-cut and ambiguous cases | [`tickets.py`](tickets.py) — 20 tickets (15 clear-cut + 5 ambiguous) |
+
 ## Sample Tickets
 
 The project includes 20 sample tickets across 5 categories:

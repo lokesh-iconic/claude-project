@@ -1,3 +1,5 @@
+Operate Claude Code Across a Real Repository
+
 Problem Statement
 Rather than using Claude Code casually, operate it deliberately across a real (or realistic sample) repository: correct CLAUDE.md hierarchy, custom commands, and both interactive and headless usage.
 
