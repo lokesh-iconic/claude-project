@@ -1,3 +1,5 @@
+Build a Ticket Triage System — Twice
+
 Problem Statement
 A support team wants incoming tickets automatically classified, routed, and drafted a first-response. Build this two ways: first as a deterministic workflow (fixed prompt chain), then as an agent using the Claude Agent SDK. Use the comparison to prove you know when each is the right architectural choice — not just how to build both.
 

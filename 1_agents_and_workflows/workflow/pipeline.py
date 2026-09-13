@@ -67,7 +67,7 @@ def _get_client():
         return _client_instance
 
     api_key = os.getenv("ANTHROPIC_API_KEY", "")
-    if not api_key or api_key.startswith("sk-ant-your"):
+    if not api_key or api_key.startswith("sk-ant-api03-"):
         _client_checked = True
         _client_instance = None
         return None

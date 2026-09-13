@@ -1,3 +1,5 @@
+Build and Ship a Claude-Powered Document Q&A Application
+
 Problem Statement
 A client wants an internal tool where employees upload a document and ask questions against it, with reliable session handling, sensible model configuration, and a codebase another engineer could pick up without a walkthrough. This is the largest domain on the exam — treat this as a real, shippable mini-application, not a script.
 
