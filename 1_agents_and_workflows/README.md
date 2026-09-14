@@ -101,8 +101,6 @@ See the detailed analysis in [`pydantic_ai_component/classifier.py`](pydantic_ai
 
 ## Assignment Requirements Mapping
 
-> Reference: [`1_agents_and_workflows.txt`](../1_agents_and_workflows.txt)
-
 ### What This Proves
 
 | Requirement | Where It's Demonstrated |
@@ -163,3 +161,14 @@ The ambiguous tickets are designed to test edge cases:
 - **Live mode** (with `ANTHROPIC_API_KEY` in `.env`): Makes real API calls to Claude. Results will vary between runs but demonstrate true model capabilities.
 
 Both modes produce identical output formats, so the comparison runner works with either.
+
+To run in **live mode**:
+
+1. Set a valid `ANTHROPIC_API_KEY` in the `.env` file at the project root
+2. Run any script normally — live mode is auto-detected when the API key is present:
+
+```bash
+uv run python .\1_agents_and_workflows\run_comparison.py
+```
+
+If the API key is missing or invalid, the scripts fall back to mock mode automatically with a warning.

@@ -103,8 +103,6 @@ Every API call (mock or live) is tracked by `tracker.py`:
 
 ## Assignment Requirements Mapping
 
-> Reference: [`5_model_selection_and_optimization.txt`](../5_model_selection_and_optimization.txt)
-
 ### What This Proves
 
 | Requirement | Where It's Demonstrated |
@@ -139,3 +137,5 @@ All scripts run in mock mode by default (no API key needed):
 - **Token counts** simulate realistic values based on text length
 - **Cost calculations** use real Anthropic pricing — identical in mock and live
 - The mock classifier intentionally produces the same accuracy for Haiku and Sonnet (the key insight: simple classification doesn't benefit from more capable models)
+
+This module is designed to run in **mock mode only**. The core deliverable is the cost/latency analysis framework and model selection rationale — not the API calls themselves. Mock responses use realistic token counts and real Anthropic pricing, so cost calculations are representative of live usage.

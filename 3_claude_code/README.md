@@ -60,8 +60,6 @@ claude
 
 ## Assignment Requirements Mapping
 
-> Reference: [`3_claude_code.txt`](../3_claude_code.txt)
-
 ### What This Proves
 
 | Requirement | Where It's Demonstrated |
@@ -204,3 +202,14 @@ The `allow` list pre-approves safe, repeatable commands (`uv sync`, `pytest`, `g
 ## Mock vs. Live Mode
 
 All scripts work without an API key. Claude Code uses its own authentication (configured during `claude` setup). The headless scripts capture whatever output Claude Code produces.
+
+To run in **live mode**:
+
+1. Ensure Claude Code is installed and authenticated (`claude` command works in your terminal)
+2. The validation script can test headless mode with a live Claude Code call:
+
+```bash
+uv run python .\3_claude_code\validate_setup.py --headless
+```
+
+The headless scripts (`scripts/headless_summary.py`, `scripts/headless_summary.ps1`) use `claude -p "..."` which runs non-interactively. No `ANTHROPIC_API_KEY` in `.env` is needed — Claude Code manages its own authentication.
