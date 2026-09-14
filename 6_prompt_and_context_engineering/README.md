@@ -100,8 +100,6 @@ The parser handles four input categories:
 
 ## Assignment Requirements Mapping
 
-> Reference: [`6_prompt_and_context_engineering.txt`](../6_prompt_and_context_engineering.txt)
-
 ### What This Proves
 
 | Requirement | Where It's Demonstrated |
@@ -130,7 +128,20 @@ The parser handles four input categories:
 
 ## Mock vs. Live Mode
 
-All scripts run in mock mode by default (no API key needed):
+All scripts run in **mock mode** by default (no API key needed):
 - **Mock responses** produce valid structured JSON matching the system prompt's schema
 - **Token counts** are estimated from text length (~1.33 tokens/word)
 - **Context management** works identically — pruning and compaction operate on message arrays regardless of whether responses came from the API or mock
+
+To run in **live mode** against the real Anthropic API:
+
+1. Ensure `ANTHROPIC_API_KEY` is set in the `.env` file at the project root (or as an environment variable)
+2. Optionally set `CLAUDE_MODEL` to override the default model (defaults to `claude-sonnet-4-20250514`)
+3. Add the `--live` flag to any runner script:
+
+```bash
+uv run python .\6_prompt_and_context_engineering\run_session.py --live
+uv run python .\6_prompt_and_context_engineering\run_parser_test.py
+```
+
+Note: `run_parser_test.py` does not call the API (it tests the parser with hardcoded malformed inputs), so it has no live mode. If the API key is missing or invalid, `run_session.py` falls back to mock mode automatically.

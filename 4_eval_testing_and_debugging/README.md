@@ -127,8 +127,6 @@ See [`diagnosis/trace_analysis.md`](diagnosis/trace_analysis.md):
 
 ## Assignment Requirements Mapping
 
-> Reference: [`4_eval_testing_and_debugging.txt`](../4_eval_testing_and_debugging.txt)
-
 ### What This Proves
 
 | Requirement | Where It's Demonstrated |
@@ -168,3 +166,14 @@ All scripts run in mock mode by default (no API key needed). The mock classifier
 - **Fixed mock**: Simulates the effect of the explicit rubric (correct priorities)
 
 Both modes demonstrate the same diagnostic principles — the bugs and fixes work identically regardless of whether the actual API is called.
+
+To run in **live mode**:
+
+1. Set a valid `ANTHROPIC_API_KEY` in the `.env` file at the project root
+2. Run any script normally — live mode is auto-detected when the API key is present:
+
+```bash
+uv run python .\4_eval_testing_and_debugging\run_comparison.py
+```
+
+If the API key is missing or invalid, the scripts fall back to mock mode automatically with a warning.

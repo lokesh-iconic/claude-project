@@ -75,7 +75,10 @@ def main():
     print("  MODULE 6: Prompt & Context Engineering — 25-Turn Session Test")
     print("=" * 70)
 
-    assistant = TechSupportAssistant(live_mode=False)
+    live_mode = "--live" in sys.argv
+    assistant = TechSupportAssistant(live_mode=live_mode)
+    mode_label = "LIVE" if live_mode else "MOCK"
+    print(f"  Mode: {mode_label}")
 
     print(f"\n  Running {len(CONVERSATION_SCRIPT)} turns...\n")
 

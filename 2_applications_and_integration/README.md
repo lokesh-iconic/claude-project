@@ -74,8 +74,6 @@ curl -X POST http://localhost:8000/api/v1/sessions/{session_id}/ask/stream \
 
 ## Assignment Requirements Mapping
 
-> Reference: [`2_applications_and_integration.txt`](../2_applications_and_integration.txt)
-
 ### What This Proves
 
 | Requirement | Where It's Demonstrated |
@@ -165,3 +163,15 @@ In these cases, the cost savings (50% discount) and higher throughput of the Bat
 - **Live mode**: Set `ANTHROPIC_API_KEY` in environment. Real Claude API calls with streaming and caching.
 
 Both modes serve identical API responses (same Pydantic schemas), so the client code works unchanged.
+
+To run in **live mode**:
+
+1. Set a valid `ANTHROPIC_API_KEY` in the `.env` file at the project root
+2. Optionally set `CLAUDE_MODEL` in `config.yaml` to override the default model
+3. Start the server normally — live mode is auto-detected when the API key is present:
+
+```bash
+uv run python .\2_applications_and_integration\app\main.py
+```
+
+If the API key is missing or invalid, the server falls back to mock mode automatically with a warning.
