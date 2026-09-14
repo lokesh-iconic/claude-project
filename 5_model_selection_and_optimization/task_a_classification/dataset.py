@@ -1,0 +1,186 @@
+"""
+dataset.py -- 50 labeled email samples for high-volume classification.
+
+Each sample has a ground-truth sentiment label for accuracy evaluation.
+Categories: positive, negative, neutral, urgent, spam
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+
+
+@dataclass
+class EmailSample:
+    """A labeled email for classification."""
+    id: str
+    subject: str
+    body: str
+    ground_truth: str  # positive | negative | neutral | urgent | spam
+
+
+SAMPLES: list[EmailSample] = [
+    # --- Positive (10) ---
+    EmailSample("E-001", "Love the new update!",
+                "The latest release is fantastic. The dashboard loads so much faster now and the new chart types are exactly what we needed. Great work!",
+                "positive"),
+    EmailSample("E-002", "Thanks for the quick fix",
+                "Just wanted to say thanks for resolving my issue so quickly. Your support team is top-notch. Will definitely recommend to colleagues.",
+                "positive"),
+    EmailSample("E-003", "Excellent onboarding experience",
+                "Just finished the onboarding process and it was seamless. Every step was clearly explained and I was up and running in under 10 minutes.",
+                "positive"),
+    EmailSample("E-004", "Your product saved our quarter",
+                "We were struggling with our reporting until we switched to your platform. The automated reports alone have saved us 20 hours a week.",
+                "positive"),
+    EmailSample("E-005", "Happy anniversary!",
+                "It's been a year since we started using your service and I just wanted to say how pleased we are. Looking forward to many more years.",
+                "positive"),
+    EmailSample("E-006", "Great webinar yesterday",
+                "Attended the product webinar and learned so much. The tips about advanced filters were really helpful. Please do more of these!",
+                "positive"),
+    EmailSample("E-007", "5-star review incoming",
+                "I left a 5-star review on G2 today. Your product genuinely delivers on its promises which is rare in this space.",
+                "positive"),
+    EmailSample("E-008", "Referral for you",
+                "I've referred three companies to you this month. They all asked what tools I use and your platform was the first I mentioned.",
+                "positive"),
+    EmailSample("E-009", "Perfect integration",
+                "The Salesforce integration works flawlessly. Data syncs in real-time and the mapping was intuitive. Exactly what we hoped for.",
+                "positive"),
+    EmailSample("E-010", "Team loves it",
+                "Rolled out your platform to the entire sales team. Everyone loves the mobile app especially. No complaints at all.",
+                "positive"),
+
+    # --- Negative (10) ---
+    EmailSample("E-011", "Extremely disappointed",
+                "I've been a customer for two years and the service has steadily declined. Response times are terrible and the product keeps breaking.",
+                "negative"),
+    EmailSample("E-012", "Cancelling our subscription",
+                "We're done. Three outages this month, no communication from your team, and the promised features from Q1 still aren't delivered.",
+                "negative"),
+    EmailSample("E-013", "Worst experience ever",
+                "I spent four hours on hold with support yesterday. When I finally got someone they couldn't help and transferred me again. Unacceptable.",
+                "negative"),
+    EmailSample("E-014", "Data export is broken",
+                "The CSV export has been producing corrupted files for a week. We've reported it twice and gotten zero response. This is affecting our compliance.",
+                "negative"),
+    EmailSample("E-015", "Misleading pricing",
+                "The pricing page says $29/month but my bill is $47. Apparently there are hidden fees for API access and additional storage. This feels dishonest.",
+                "negative"),
+    EmailSample("E-016", "Your competitor does this better",
+                "I just demoed Competitor X and their version of this feature is miles ahead. If you don't catch up we'll be switching by end of quarter.",
+                "negative"),
+    EmailSample("E-017", "Frustrated with the bugs",
+                "Every release introduces new bugs. The latest update broke our custom reports and nobody seems to care. We're losing confidence.",
+                "negative"),
+    EmailSample("E-018", "Requesting a refund",
+                "Given the number of issues we've experienced this month I'm requesting a full refund. The service did not meet the SLA you promised.",
+                "negative"),
+    EmailSample("E-019", "Poor documentation",
+                "Your API documentation is outdated and full of errors. We wasted two days implementing endpoints that don't exist anymore.",
+                "negative"),
+    EmailSample("E-020", "Going to file a complaint",
+                "If my account issue isn't resolved by Friday I'll be filing a formal complaint with consumer protection. This is the third time I've asked.",
+                "negative"),
+
+    # --- Neutral (10) ---
+    EmailSample("E-021", "Question about enterprise pricing",
+                "We're evaluating your enterprise tier for a 200-person team. Could you send over the pricing details and any volume discounts available?",
+                "neutral"),
+    EmailSample("E-022", "Schedule a demo",
+                "I'd like to schedule a product demo for our team next Tuesday or Wednesday. We have about 8 people who would join the call.",
+                "neutral"),
+    EmailSample("E-023", "Invoice for Q3",
+                "Could you please send the consolidated invoice for Q3? Our accounting team needs it by end of this week for the quarterly close.",
+                "neutral"),
+    EmailSample("E-024", "API rate limit question",
+                "What's the current rate limit for the /v2/analytics endpoint? We're planning to increase our polling frequency and want to stay within bounds.",
+                "neutral"),
+    EmailSample("E-025", "Update our billing address",
+                "Please update our company billing address to 123 New Street, Suite 400, San Francisco, CA 94105. Effective immediately.",
+                "neutral"),
+    EmailSample("E-026", "Confirming our meeting",
+                "Just confirming our account review meeting for this Thursday at 2pm PT. Looking forward to discussing the roadmap.",
+                "neutral"),
+    EmailSample("E-027", "SSO configuration",
+                "We'd like to set up SAML SSO with our Okta instance. Could you point me to the configuration guide or have someone walk us through it?",
+                "neutral"),
+    EmailSample("E-028", "Annual contract renewal",
+                "Our contract is up for renewal next month. Can we set up a call to discuss the renewal terms and any changes in pricing?",
+                "neutral"),
+    EmailSample("E-029", "Need a report on usage",
+                "Can you generate a usage report for our account for the last 90 days? We need total API calls, storage used, and active users.",
+                "neutral"),
+    EmailSample("E-030", "Adding a new team member",
+                "I need to add a new user to our account: j.smith@company.com with editor permissions. Can you process this or should I do it in the admin panel?",
+                "neutral"),
+
+    # --- Urgent (10) ---
+    EmailSample("E-031", "CRITICAL: Production down",
+                "Our entire production environment is down. All API calls are returning 503 errors. This started 10 minutes ago. We need immediate help. Thousands of users affected.",
+                "urgent"),
+    EmailSample("E-032", "Security breach suspected",
+                "We're seeing unauthorized API calls from IPs we don't recognize. Someone may have compromised our API keys. Need to revoke and reissue IMMEDIATELY.",
+                "urgent"),
+    EmailSample("E-033", "Data loss -- need recovery NOW",
+                "An admin accidentally deleted our entire project workspace including all historical data. We need emergency recovery before the backup window closes.",
+                "urgent"),
+    EmailSample("E-034", "Compliance deadline in 2 hours",
+                "We have a regulatory submission due in 2 hours and the export feature is timing out. Without this data we face fines. URGENT HELP NEEDED.",
+                "urgent"),
+    EmailSample("E-035", "Payment system broken",
+                "Our customers can't complete payments. The checkout integration with your billing API is returning invalid token errors. Revenue is being lost every minute.",
+                "urgent"),
+    EmailSample("E-036", "CEO demo in 30 minutes",
+                "I have a board demo in 30 minutes and the dashboard is showing a blank white screen. I've cleared cache, tried different browsers. Nothing works. Please help NOW.",
+                "urgent"),
+    EmailSample("E-037", "Customer data exposed",
+                "We discovered that customer PII is being returned in API responses that should be filtered. This is a privacy incident. Need patch immediately.",
+                "urgent"),
+    EmailSample("E-038", "Database migration stuck",
+                "Our database migration has been stuck at 60% for 3 hours. If we roll back we lose a week of work. If it continues it might corrupt data. Need guidance NOW.",
+                "urgent"),
+    EmailSample("E-039", "Investor meeting tomorrow",
+                "Our analytics dashboard needs to show Q3 results for an investor meeting tomorrow at 9am. The data pipeline has been failing since yesterday. This cannot wait.",
+                "urgent"),
+    EmailSample("E-040", "SSL certificate expired",
+                "Our SSL certificate through your service expired and now all our customers are seeing security warnings. Our site is effectively down. Emergency fix needed.",
+                "urgent"),
+
+    # --- Spam (10) ---
+    EmailSample("E-041", "Congratulations! You've won!",
+                "You have been selected as the winner of our $10,000 prize draw! Click here to claim your reward. Act now before it expires!!! Limited time offer!!!",
+                "spam"),
+    EmailSample("E-042", "URGENT: Verify your account",
+                "Your account will be suspended in 24 hours unless you verify your identity. Click the link below to update your password and confirm your SSN.",
+                "spam"),
+    EmailSample("E-043", "Hot investment opportunity",
+                "SECRET STOCK TIP: XYZQ Corp is about to announce a massive merger. Buy now before the price explodes 10,000%. This is guaranteed returns.",
+                "spam"),
+    EmailSample("E-044", "You've been selected!",
+                "Dear valued customer, you've been exclusively selected for our premium membership. Reply with your credit card number to activate your FREE trial.",
+                "spam"),
+    EmailSample("E-045", "Make $5000/day from home",
+                "I made $50,000 last month working only 2 hours a day. Want to know my secret? Visit my site and start earning today. No experience needed!",
+                "spam"),
+    EmailSample("E-046", "RE: RE: FWD: Important document",
+                "Please review the attached document. It requires your immediate signature. Download the .exe file to proceed with the verification.",
+                "spam"),
+    EmailSample("E-047", "Cheap medications online",
+                "Get 90% off all prescription medications! No prescription required! Fast discreet shipping. Order now at www.totally-legit-pharmacy.xyz",
+                "spam"),
+    EmailSample("E-048", "Your computer has a virus",
+                "ALERT: Our scan detected 47 viruses on your computer! Call 1-800-SCAM-YOU immediately to speak with a certified Microsoft technician.",
+                "spam"),
+    EmailSample("E-049", "Nigerian prince needs help",
+                "I am Prince Adewale and I need your help transferring $45 million USD. You will receive 30% for your assistance. Send bank details to proceed.",
+                "spam"),
+    EmailSample("E-050", "Free iPhone 20 giveaway",
+                "Apple is giving away FREE iPhone 20s to the first 100 people who complete this survey! Share with 10 friends to qualify. Hurry limited time!!",
+                "spam"),
+]
+
+
+# Accuracy bar -- defined upfront BEFORE running any tests
+ACCURACY_BAR = 0.85  # 85% minimum accuracy to pass

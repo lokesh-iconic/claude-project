@@ -151,6 +151,14 @@ Reasons:
 
 In these cases, the cost savings (50% discount) and higher throughput of the Batches API would outweigh the latency penalty.
 
+## Self-Check
+
+| Question | Answer |
+|----------|--------|
+| Could another engineer clone your repo and understand the session-handling logic without asking you first? | **Yes** — `app/session.py` has a detailed module docstring documenting all 5 decisions (create, persist, summarize, restart, expire) with rationale. `config.yaml` exposes session timeout as a named config key. The REST API endpoints (`/reset`, `DELETE`) map directly to session lifecycle. |
+| Does prompt caching actually reduce token usage on a second question against the same document — check the numbers, don't assume? | **Yes** — `app/claude_client.py` places the document in a system prompt block with `cache_control: {"type": "ephemeral"}`. The response `usage` field reports `cache_creation_input_tokens` on the first call and `cache_read_input_tokens` on subsequent calls. Cache reads cost ~10% of full input. |
+| Is your model version pinned somewhere explicit, or would a silent Anthropic model update change your app's behavior without anyone noticing? | **Pinned** — `config.yaml` specifies `model: claude-sonnet-4-20250514` (a dated version, not an alias like `claude-3-sonnet`). `app/config.py` reads this at startup. A model change requires an explicit config edit that shows up as a git diff. |
+
 ## Mock vs. Live Mode
 
 - **Mock mode** (default): Keyword-matching answers that cite relevant document sections. No API key needed.
