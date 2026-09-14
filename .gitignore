@@ -72,3 +72,5 @@ logs/
 
 # Root-level Claude CLI session & runtime data (keeps claude_code/ directory intact)
 /.claude/
+
+problem_statements/

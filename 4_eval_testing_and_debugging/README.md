@@ -154,6 +154,13 @@ See [`diagnosis/trace_analysis.md`](diagnosis/trace_analysis.md):
 |-------------|----------------|
 | Take any working integration you've already built (Domain 1 or 2's assignment works well) | Based on Domain 1 Agent (ticket triage) — [`shared.py`](shared.py) and [`tickets.py`](tickets.py) copied from `1_agents_and_workflows/` |
 
+## Self-Check
+
+| Question | Answer |
+|----------|--------|
+| Did your initial hypothesis for each bug turn out to be right, or did the trace reveal something different? | **Both hypotheses were confirmed.** Hypothesis 1 (field dropped between classification and routing) was confirmed by the trace showing `is_ambiguous=True` in classify output but `False` in routing — the `execute_route_ticket` function hardcoded it. Hypothesis 2 (vague prompt → downgraded priorities) was confirmed by the trace showing systematic `high/urgent → medium` downgrades across 10 tickets. See [`diagnosis/trace_analysis.md`](diagnosis/trace_analysis.md). |
+| Could you explain, to someone who didn't see the bugs, which layer each one lived in and how you knew? | **Bug 1** lived in the **integration layer** (data passing between tools) — the classify tool correctly set `is_ambiguous=True`, but the route tool's code ignored the value and hardcoded `False`. The trace proved this by showing the correct value entering the function but the wrong value being used internally. **Bug 2** lived in the **model output layer** (prompt quality) — the system prompt said "determine how important it seems" instead of providing explicit URGENT/HIGH/MEDIUM/LOW criteria. The trace proved this by showing every priority defaulting to `medium` regardless of ticket severity. |
+
 ## Mock vs. Live Mode
 
 All scripts run in mock mode by default (no API key needed). The mock classifiers simulate what the model would produce:

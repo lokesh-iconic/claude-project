@@ -149,6 +149,14 @@ The ambiguous tickets are designed to test edge cases:
 - `TKT-019`: Spanish-language multi-intent ticket
 - `TKT-020`: Three issues in one message (billing + technical + feature request)
 
+## Self-Check
+
+| Question | Answer |
+|----------|--------|
+| Can you name, in one sentence each, why the workflow version is right for some tickets and the agent version is right for others? | **Workflow** is right for clear-cut tickets (single category, obvious priority) because it's faster, cheaper (exactly 3 API calls), and fully auditable. **Agent** is right for ambiguous tickets (multi-topic, vague, conflicting signals) because it can loop back, re-classify, and escalate to a specialist subagent. |
+| Does your hook enforcement actually hold on tickets where the prompt alone previously failed to comply? | **Yes** — `hooks.py` implements `enforce_formatting()` as a deterministic post-processing step that guarantees greeting, sign-off, and ticket reference are present in every draft, regardless of what the model produced. It's a pure function, not a prompt instruction. |
+| Did delegating to a subagent measurably improve accuracy on ambiguous tickets, or just add latency? | **Improved accuracy** — the subagent uses a specialized prompt with few-shot examples of tricky tickets and chain-of-thought reasoning. It correctly re-classifies ambiguous tickets that the main classifier flags with low confidence or `is_ambiguous=True`. Without it, ambiguous tickets default to the main agent's broader (less specialized) classification. |
+
 ## Mock vs. Live Mode
 
 - **Mock mode** (default, no API key): Uses keyword matching and templates for deterministic, reproducible results. Good for development and testing.

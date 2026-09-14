@@ -193,6 +193,14 @@ Interactive Claude Code is for development. Headless mode (`-p`) is for automati
 
 The `allow` list pre-approves safe, repeatable commands (`uv sync`, `pytest`, `git log`) so Claude doesn't ask permission every time. The `deny` list blocks `.env` files regardless of what Claude decides to do — a hard enforcement that prompts can't override.
 
+## Self-Check
+
+| Question | Answer |
+|----------|--------|
+| Does a fresh clone of the repo pick up your project-level CLAUDE.md automatically? | **Yes** — `CLAUDE.md` at the repo root is read automatically at session start by Claude Code. No manual configuration needed. The `validate_setup.py` script verifies this file exists and has the expected content. |
+| Does the directory-level CLAUDE.md apply only within that directory, not bleed into the rest of the repo? | **Yes** — `sample_subfolder/CLAUDE.md` contains agent-specific conventions (hook naming, subagent patterns) that only activate when Claude reads files inside that subdirectory. The project-level rules still apply simultaneously, but directory rules supplement rather than override. Verify with `/context` command. |
+| Does your headless-mode run complete without waiting on any interactive input? | **Yes** — both `scripts/headless_summary.py` and `scripts/headless_summary.ps1` use `claude -p "..."` which runs non-interactively. The `-p` flag sends the prompt and exits without user interaction. Output is captured programmatically via `subprocess`. |
+
 ## Mock vs. Live Mode
 
 All scripts work without an API key. Claude Code uses its own authentication (configured during `claude` setup). The headless scripts capture whatever output Claude Code produces.
