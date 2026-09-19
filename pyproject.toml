@@ -1,7 +1,7 @@
 [project]
 name = "claude-project"
 version = "0.1.0"
-description = "Add your description here"
+description = "Claude project for AI agent development practices"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
