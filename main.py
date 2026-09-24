@@ -29,12 +29,7 @@ MODULES = [
     (
         2,
         "Applications & Integration",
-        [("DocuQuery server test", [
-            sys.executable, "-c",
-            "import sys, os; sys.path.insert(0, os.path.join(os.environ['PROJECT_ROOT'], "
-            "'2_applications_and_integration')); "
-            "from app.main import app; print('  DocuQuery FastAPI app loads successfully')"
-        ])],
+        [("DocuQuery validation", [sys.executable, os.path.join("2_applications_and_integration", "run_validation.py")])],
     ),
     (
         3,

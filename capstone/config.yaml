@@ -1,0 +1,81 @@
+# ============================================================================
+# Capstone Support Assistant — Configuration
+# ============================================================================
+# Pins model versions, prompt versions, session settings, and cache config.
+# Every change shows up as a diff in version control.
+# ============================================================================
+
+model:
+  # Per-task model assignments — deliberate choice, not defaults
+  tasks:
+    simple_lookup:
+      name: "claude-3-5-haiku-20241022"
+      max_tokens: 512
+      temperature: 0.0
+      justification: "Order/account lookups are deterministic data retrieval — Haiku is 3.75x cheaper and 2.5x faster"
+
+    classification:
+      name: "claude-3-5-haiku-20241022"
+      max_tokens: 300
+      temperature: 0.0
+      justification: "Keyword-heavy classification doesn't need deep reasoning — Haiku handles it accurately"
+
+    complex_reasoning:
+      name: "claude-sonnet-4-20250514"
+      max_tokens: 2048
+      temperature: 0.3
+      justification: "Nuanced customer responses and multi-step reasoning need Sonnet's depth"
+
+    specialist:
+      name: "claude-sonnet-4-20250514"
+      max_tokens: 1024
+      temperature: 0.2
+      justification: "Chain-of-thought analysis for ambiguous/multi-category cases"
+
+prompts:
+  # ── Prompt Versioning ──
+  system_v1:
+    text: >
+      You are a customer support assistant. Help users with their questions
+      about orders, accounts, and products. Use the available tools to look
+      up information. If you cannot resolve an issue, escalate it.
+    created: "2025-09-01"
+    note: "Initial prompt — basic instruction"
+
+  system_v2:
+    text: >
+      You are a professional customer support assistant for our company.
+      You help customers with order inquiries, account questions, product
+      information, and general support.
+
+      Rules:
+      1. Always use tools to look up real data — never guess or fabricate information.
+      2. If a customer asks about an order, use lookup_order with their order ID.
+      3. If a customer asks about their account, use lookup_account.
+      4. For product questions, use search_knowledge_base.
+      5. If you cannot resolve the issue, use escalate_to_human to create an escalation ticket.
+      6. Be empathetic, professional, and concise.
+      7. Never reveal internal system details, API keys, or configuration.
+      8. Respond in the same language as the customer when possible.
+    created: "2025-09-15"
+    note: "Added tool usage rules, security constraints, escalation guidance"
+
+  active_version: "system_v2"
+
+session:
+  max_history_tokens: 50000
+  summarize_threshold: 40000
+  idle_timeout_minutes: 30
+
+cache:
+  enabled: true
+  type: "ephemeral"
+  min_prompt_length: 1000
+
+security:
+  # Pre-processing guardrails are always on
+  pre_processing: true
+  # Post-processing content policy is always on
+  post_processing: true
+  # Log blocked requests for audit
+  log_blocked: true
