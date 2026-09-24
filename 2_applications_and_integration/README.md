@@ -18,6 +18,17 @@ uv run python -m uvicorn app.main:app --app-dir 2_applications_and_integration
 # API root:   http://localhost:8000/
 ```
 
+## Validation
+
+Since this module is a FastAPI server (not a batch script), it includes a validation runner that checks the app loads correctly without starting the server:
+
+```bash
+# Validate app, routes, config, models, client, and sample docs
+uv run python .\2_applications_and_integration\run_validation.py
+```
+
+This is what `main.py` calls when running all 8 modules. It verifies 6 checks: app loads, routes registered, config loads, data models valid, Claude client available, and sample documents present.
+
 ## Usage Example (curl)
 
 ```bash
@@ -42,6 +53,7 @@ curl -X POST http://localhost:8000/api/v1/sessions/{session_id}/ask/stream \
 ```
 2_applications_and_integration/
 ├── README.md                       <- You are here
+├── run_validation.py               <- Validation runner (6 checks, used by main.py)
 ├── requirements_spec.md            <- One-paragraph functional spec
 ├── config.yaml                     <- Model pinning + prompt versioning
 ├── code_review.md                  <- Peer review + fixes applied

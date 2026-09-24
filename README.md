@@ -1,7 +1,8 @@
 # Claude Project
 
 A multi-module Python repository demonstrating Claude API integration patterns,
-agent architectures, and production-grade application design.
+agent architectures, and production-grade application design — culminating in a
+capstone project that integrates all 8 domains into a unified support assistant.
 
 ## Project Structure
 
@@ -15,6 +16,7 @@ claude_project/
 ├── 6_prompt_and_context_engineering/    ← Multi-turn assistant with context compaction and drift testing
 ├── 7_security_and_safety/              ← Prompt injection attack/defense + secrets audit
 ├── 8_tools_and_MCPs/                   ← Same capability three ways: custom tool, skill, MCP server
+├── capstone/                            ← CAPSTONE: Production support assistant integrating all 8 domains
 ├── main.py                              ← Run all 8 modules sequentially
 ├── .env                                 ← API key and model configuration
 ├── .gitignore                           ← Clean ignore rules for git
@@ -57,6 +59,21 @@ uv run python .\7_security_and_safety\run_comparison.py
 
 # Module 8 — Tools and MCPs
 uv run python .\8_tools_and_MCPs\run_all.py
+
+# ── CAPSTONE PROJECT ──
+
+# Run the capstone self-test (demonstrates all 8 domains)
+uv run python capstone/run_capstone.py
+
+# Run the capstone eval suite (10 cases + seeded bug verification)
+uv run python capstone/eval/run_evals.py
+
+# Run the capstone secrets audit
+uv run python capstone/security/secrets_audit.py
+
+# Start the capstone web UI
+uv run python capstone/run_capstone.py --server
+# Chat UI available at: http://localhost:8000
 ```
 
 ## Module Overview
@@ -71,12 +88,18 @@ uv run python .\8_tools_and_MCPs\run_all.py
 | **6** | Engineer a Prompt and Context Pipeline That Survives a Long Session | Context compaction, instruction anchoring, subagent isolation, defensive structured output parsing |
 | **7** | Defend a Claude Application Against Prompt Injection | Layered defenses (code hooks, content policy, input isolation), secrets audit, identity validation |
 | **8** | Build the Same Capability Three Ways — Tool, Skill, MCP | Custom tool vs. Skill vs. MCP server tradeoffs, structured errors, equivalence testing |
+| **Capstone** | Production Support Assistant | Integrates all 8 domains: agentic orchestrator, FastAPI app, CLAUDE.md, eval suite, model routing, context management, security guardrails, custom tools + MCP |
 
 ## Running All Modules
 
 ```bash
-# Run all 8 modules with a single command
+# Run all 8 individual modules
 uv run python main.py
+
+# Run the capstone integration project
+uv run python capstone/run_capstone.py
 ```
 
-This executes every module sequentially, prints a pass/fail summary with per-module timing, and saves a markdown report to `output/run_report.md`.
+`main.py` executes every module sequentially, prints a pass/fail summary with per-module timing, and saves a markdown report to `output/run_report.md`.
+
+The capstone project (`capstone/`) integrates all 8 domains into a single production-grade support assistant. See [`capstone/README.md`](capstone/README.md) for full documentation.
