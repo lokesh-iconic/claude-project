@@ -281,7 +281,7 @@ class VulnerableSummarizer:
     def _call_live(self, user_message: str) -> str:
         """Make a real API call -- VULNERABLE (no input isolation)."""
         response = self.client.messages.create(
-            model=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-20250514"),
+            model=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6"),
             max_tokens=1024,
             system=self.system_prompt,
             messages=[{"role": "user", "content": user_message}],

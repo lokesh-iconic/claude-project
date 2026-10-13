@@ -200,9 +200,9 @@ class TechSupportAssistant:
         messages = self.context.get_messages_for_api()
 
         response = self.client.messages.create(
-            model="claude-sonnet-4-20250514",
+            model="claude-sonnet-4-6",
             max_tokens=1024,
-            temperature=0.0,
+            extra_body={"temperature": 0.0},  # anthropic 1.x has no typed temperature arg
             system=self.system_prompt,
             messages=messages,
         )

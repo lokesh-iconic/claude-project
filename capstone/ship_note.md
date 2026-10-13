@@ -20,7 +20,7 @@ A production-grade customer support assistant that:
 | Decision | Choice | Why |
 |----------|--------|-----|
 | Security model | Code-based (regex), not prompt-based | Deterministic guardrails can't be talked out of firing |
-| Model strategy | Haiku for lookups, Sonnet for reasoning | 3.75x cost savings on simple tasks with no quality loss |
+| Model strategy | Haiku for lookups, Sonnet for reasoning | 3x cost savings on simple tasks with no quality loss |
 | Tool approach | Custom tool for orders, MCP for knowledge base | Different coupling needs — per-user vs shared reference data |
 | Formatting | PostToolUse hook, not prompt instructions | Brand rules must be deterministic, not probabilistic |
 | Context management | Three-stage pruning/compaction | Prevents cost bloat in long support conversations |

@@ -136,7 +136,7 @@ All scripts run in **mock mode** by default (no API key needed):
 To run in **live mode** against the real Anthropic API:
 
 1. Ensure `ANTHROPIC_API_KEY` is set in the `.env` file at the project root (or as an environment variable)
-2. Optionally set `CLAUDE_MODEL` to override the default model (defaults to `claude-sonnet-4-20250514`)
+2. Optionally set `CLAUDE_MODEL` to override the default model (defaults to `claude-sonnet-4-6`)
 3. Add the `--live` flag to any runner script:
 
 ```bash

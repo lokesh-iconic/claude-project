@@ -165,7 +165,7 @@ def _get_client():
         client = anthropic.Anthropic(api_key=api_key)
         try:
             client.messages.create(
-                model="claude-3-5-haiku-20241022",
+                model="claude-haiku-4-5",
                 max_tokens=1,
                 messages=[{"role": "user", "content": "hi"}],
             )
@@ -179,6 +179,9 @@ def _get_client():
                 _client_instance = None
             else:
                 _client_instance = client
+        except anthropic.NotFoundError as e:
+            print(f"  [WARNING] Model not found ({e.message}) — running in MOCK mode.")
+            _client_instance = None
         except Exception:
             _client_instance = client
     except Exception:

@@ -47,7 +47,7 @@ def get_model_name() -> str:
     return (
         os.getenv("CLAUDE_MODEL")
         or os.getenv("ANTHROPIC_MODEL")
-        or _config.get("model", {}).get("name", "claude-3-5-sonnet-20241022")
+        or _config.get("model", {}).get("name", "claude-sonnet-4-6")
     )
 
 

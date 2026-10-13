@@ -42,8 +42,8 @@ from agent.subagent import run_specialist_classifier
 
 
 def _get_model() -> str:
-    """Return model identifier from environment or default to claude-3-5-sonnet."""
-    return os.getenv("CLAUDE_MODEL", os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022"))
+    """Return model identifier from environment or default to claude-sonnet-4-6."""
+    return os.getenv("CLAUDE_MODEL", os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-6"))
 
 
 
@@ -273,7 +273,7 @@ def _get_client():
             client.models.list(limit=1)
             # Quick 1-token test to verify active credit balance
             client.messages.create(
-                model=os.getenv("CLAUDE_MODEL", os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022")),
+                model=_get_model(),
                 max_tokens=1,
                 messages=[{"role": "user", "content": "hi"}],
             )
@@ -289,6 +289,9 @@ def _get_client():
                 _client_instance = None
             else:
                 _client_instance = client
+        except anthropic.NotFoundError as nf_err:
+            print(f"\n  [WARNING] Model '{_get_model()}' was not found ({nf_err.message}). Running in MOCK mode.\n")
+            _client_instance = None
         except Exception:
             _client_instance = client
     except Exception:

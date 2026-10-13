@@ -22,7 +22,7 @@
 2. The assistant uses the right tool for each query type (verified by eval suite)
 3. Prompt injection via customer messages is blocked (10/10 attack payloads)
 4. Long conversations (15+ turns) don't degrade response quality (context compaction)
-5. Cost is defensible: simple lookups use Haiku ($0.80/MTok), complex reasoning uses Sonnet ($3/MTok)
+5. Cost is defensible: simple lookups use Haiku ($1/MTok), complex reasoning uses Sonnet ($3/MTok)
 6. The eval suite passes all 10 cases including adversarial
 7. Another engineer can deploy from `capstone/CLAUDE.md` without a walkthrough
 8. The ship note is a real handoff document a team lead would approve

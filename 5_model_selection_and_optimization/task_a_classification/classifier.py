@@ -61,7 +61,7 @@ def classify_email_live(
     response = client.messages.create(
         model=model_id.value,
         max_tokens=50,
-        temperature=0.0,
+        extra_body={"temperature": 0.0},  # anthropic 1.x has no typed temperature arg
         messages=[{"role": "user", "content": prompt}],
     )
 

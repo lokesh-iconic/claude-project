@@ -25,12 +25,12 @@ BUG 1: Model Router Ignores Task-Based Routing When CLAUDE_MODEL Is Set
 FILE: capstone/models/router.py → ModelRouter.get_model_name()
 
 SYMPTOM:
-  When the environment variable CLAUDE_MODEL is set (e.g., to "claude-sonnet-4-20250514"),
+  When the environment variable CLAUDE_MODEL is set (e.g., to "claude-sonnet-4-6"),
   ALL requests use Sonnet regardless of task type. Simple order lookups that should
-  use Haiku ($0.80/MTok) instead use Sonnet ($3.00/MTok), inflating costs 3.75x.
+  use Haiku ($1.00/MTok) instead use Sonnet ($3.00/MTok), inflating costs 3x.
 
 REPRODUCTION:
-  1. Set CLAUDE_MODEL=claude-sonnet-4-20250514 in .env
+  1. Set CLAUDE_MODEL=claude-sonnet-4-6 in .env
   2. Send a simple order lookup: "What's the status of ORD-1001?"
   3. Observe model_used in response — should be Haiku but shows Sonnet
 

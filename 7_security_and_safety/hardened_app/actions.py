@@ -213,7 +213,7 @@ def get_system_config(user_token: str | None = None) -> dict:
            "Config retrieved (secrets masked)")
     return {
         "api_key": masked_key,         # ← masked, not plaintext
-        "model": os.environ.get("CLAUDE_MODEL", "claude-sonnet-4-20250514"),
+        "model": os.environ.get("CLAUDE_MODEL", "claude-sonnet-4-6"),
         "mode": "hardened",
         "retrieved_by": user["user_id"],
     }

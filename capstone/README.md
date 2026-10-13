@@ -134,7 +134,7 @@ capstone/
 | Decision | Choice | Why |
 |----------|--------|-----|
 | **Security model** | Code-based (regex), not prompt-based | Deterministic guardrails can't be talked out of firing |
-| **Model strategy** | Haiku for lookups, Sonnet for reasoning | 3.75x cost savings on simple tasks with no quality loss |
+| **Model strategy** | Haiku for lookups, Sonnet for reasoning | 3x cost savings on simple tasks with no quality loss |
 | **Tool approach** | Custom tool for orders, MCP for knowledge base | Different coupling needs — per-user vs shared reference data |
 | **Formatting** | PostToolUse hook, not prompt instructions | Brand rules must be deterministic, not probabilistic |
 | **Context management** | Three-stage pruning/compaction | Prevents cost bloat in long support conversations |
@@ -143,7 +143,7 @@ capstone/
 
 Two deliberately seeded bugs are documented with full trace analysis in `eval/seeded_bugs.py`:
 
-1. **Bug 1 — Router Fallback**: Environment variable `CLAUDE_MODEL` overrides per-task model routing, sending all requests to Sonnet (3.75x cost increase)
+1. **Bug 1 — Router Fallback**: Environment variable `CLAUDE_MODEL` overrides per-task model routing, sending all requests to Sonnet (3x cost increase)
 2. **Bug 2 — Priority Case**: Escalation ticket parser doesn't normalize uppercase priority values from model output (e.g., `"URGENT"` → should be `"urgent"`)
 
 Both include reproduction steps, trace analysis, and documented fixes.

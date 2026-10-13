@@ -29,7 +29,7 @@ def solve_fast_mode_live(problem: ReasoningProblem, client) -> tuple[str, dict]:
     response = client.messages.create(
         model=ModelId.SONNET.value,
         max_tokens=4096,
-        temperature=0.0,
+        extra_body={"temperature": 0.0},  # anthropic 1.x has no typed temperature arg
         messages=[{"role": "user", "content": problem.problem}],
     )
     usage = {
