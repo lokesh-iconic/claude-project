@@ -61,8 +61,8 @@ uv run python .\5_model_selection_and_optimization\task_c_summarization\run.py
 | Attribute | Detail |
 |-----------|--------|
 | **Workload** | Classify 50 emails into 5 sentiment categories |
-| **Primary Model** | Claude 3.5 Haiku ($0.80/$4.00 per MTok) |
-| **Comparison** | Claude Sonnet 4 ($3.00/$15.00 per MTok) |
+| **Primary Model** | Claude Haiku 4.5 ($1.00/$5.00 per MTok) |
+| **Comparison** | Claude Sonnet 4.6 ($3.00/$15.00 per MTok) |
 | **Accuracy Bar** | ≥85% (defined upfront before running tests) |
 | **Key Metric** | Accuracy + throughput (items/second) |
 | **Verdict** | Haiku meets the accuracy bar — Sonnet costs more for no gain |
@@ -72,8 +72,8 @@ uv run python .\5_model_selection_and_optimization\task_c_summarization\run.py
 | Attribute | Detail |
 |-----------|--------|
 | **Workload** | 5 multi-step problems (contracts, logic, pricing, system design, compliance) |
-| **Fast Mode** | Claude Sonnet 4 with `max_tokens=4096`, no thinking |
-| **Extended** | Claude Sonnet 4 with `thinking: {budget_tokens: 10000}` |
+| **Fast Mode** | Claude Sonnet 4.6 with `max_tokens=4096`, no thinking |
+| **Extended** | Claude Sonnet 4.6 with `thinking: {budget_tokens: 10000}` |
 | **Key Metric** | Quality score (0-10 rubric per problem) vs. cost/latency |
 | **Verdict** | Extended thinking scores higher — worth the cost for complex reasoning |
 
@@ -82,7 +82,7 @@ uv run python .\5_model_selection_and_optimization\task_c_summarization\run.py
 | Attribute | Detail |
 |-----------|--------|
 | **Workload** | Summarize 3 long documents + follow-up questions |
-| **Model** | Claude Sonnet 4 with `cache_control: {"type": "ephemeral"}` |
+| **Model** | Claude Sonnet 4.6 with `cache_control: {"type": "ephemeral"}` |
 | **Baseline** | Same calls without caching |
 | **Key Metric** | Cost per call (first vs. subsequent), total savings |
 | **Verdict** | Caching reduces repeat-query costs by ~60-80% |

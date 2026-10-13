@@ -34,8 +34,8 @@ load_dotenv(find_dotenv(usecwd=True), override=True)
 
 
 def _get_model() -> str:
-    """Return model identifier from environment or default to claude-3-5-sonnet."""
-    return os.getenv("CLAUDE_MODEL", os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022"))
+    """Return model identifier from environment or default to claude-sonnet-4-6."""
+    return os.getenv("CLAUDE_MODEL", os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-6"))
 
 
 # ---------------------------------------------------------------------------
@@ -67,7 +67,8 @@ def _get_client():
         return _client_instance
 
     api_key = os.getenv("ANTHROPIC_API_KEY", "")
-    if not api_key or api_key.startswith("sk-ant-api03-"):
+    # "sk-ant-api03-" is the prefix of every real key; only the .env template placeholder is a "no key".
+    if not api_key or api_key.startswith("sk-ant-your"):
         _client_checked = True
         _client_instance = None
         return None
@@ -96,6 +97,9 @@ def _get_client():
                 _client_instance = None
             else:
                 _client_instance = client
+        except anthropic.NotFoundError as nf_err:
+            print(f"\n  [WARNING] Model '{_get_model()}' was not found ({nf_err.message}). Running in MOCK mode.\n")
+            _client_instance = None
         except Exception:
             _client_instance = client
     except Exception:

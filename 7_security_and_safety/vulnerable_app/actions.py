@@ -61,6 +61,6 @@ def get_system_config() -> dict:
     return {
         "api_key": INTERNAL_API_KEY,       # ← leaked
         "db_password": DATABASE_PASSWORD,   # ← leaked
-        "model": "claude-sonnet-4-20250514",
+        "model": "claude-sonnet-4-6",
         "mode": "vulnerable",
     }

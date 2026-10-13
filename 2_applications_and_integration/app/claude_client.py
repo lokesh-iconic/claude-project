@@ -75,6 +75,11 @@ def _get_client():
                 _client_instance = None
             else:
                 _client_instance = client
+        except anthropic.NotFoundError as nf_err:
+            # Unknown/retired model: every later call would 404, so don't pretend to be live.
+            print(f"\n  [WARNING] Model '{get_model_name()}' was not found ({nf_err.message}).")
+            print("  [WARNING] Running DocuQuery in MOCK mode. Fix model.name in config.yaml for live mode.\n")
+            _client_instance = None
         except Exception:
             _client_instance = client
     except Exception:
@@ -187,7 +192,10 @@ def _stream_live(
     with client.messages.stream(
         model=get_model_name(),
         max_tokens=get_max_tokens(),
-        temperature=get_temperature(),
+        # anthropic 1.x dropped the typed `temperature` argument; the API still accepts it
+        # on the Sonnet 4.6 / Haiku 4.5 line. Remove this if the pinned model is moved to
+        # the 5.x family, which rejects non-default sampling values.
+        extra_body={"temperature": get_temperature()},
         system=system,
         messages=messages,
     ) as stream:

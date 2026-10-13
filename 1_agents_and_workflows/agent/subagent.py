@@ -47,8 +47,8 @@ from shared import ClassificationResult, Category, Priority
 
 
 def _get_model() -> str:
-    """Return model identifier from environment or default to claude-3-5-sonnet."""
-    return os.getenv("CLAUDE_MODEL", os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022"))
+    """Return model identifier from environment or default to claude-sonnet-4-6."""
+    return os.getenv("CLAUDE_MODEL", os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-6"))
 
 
 

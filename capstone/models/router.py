@@ -30,8 +30,8 @@ class TaskType(str, Enum):
 
 class ModelId(str, Enum):
     """Supported model identifiers."""
-    HAIKU = "claude-3-5-haiku-20241022"
-    SONNET = "claude-sonnet-4-20250514"
+    HAIKU = "claude-haiku-4-5"
+    SONNET = "claude-sonnet-4-6"
 
 
 @dataclass(frozen=True)
@@ -59,10 +59,10 @@ class TaskModelConfig:
 
 PRICING = {
     ModelId.HAIKU: ModelPricing(
-        input_per_mtok=0.80,
-        output_per_mtok=4.00,
-        cache_write_per_mtok=1.00,
-        cache_read_per_mtok=0.08,
+        input_per_mtok=1.00,
+        output_per_mtok=5.00,
+        cache_write_per_mtok=1.25,
+        cache_read_per_mtok=0.10,
     ),
     ModelId.SONNET: ModelPricing(
         input_per_mtok=3.00,
@@ -85,7 +85,7 @@ TASK_CONFIGS: dict[TaskType, TaskModelConfig] = {
         temperature=0.0,
         justification=(
             "Order/account lookups are deterministic data retrieval — "
-            "Haiku is 3.75x cheaper ($0.80 vs $3.00/MTok input) and 2.5x faster"
+            "Haiku is 3x cheaper ($1.00 vs $3.00/MTok input) and 2.5x faster"
         ),
     ),
     TaskType.CLASSIFICATION: TaskModelConfig(

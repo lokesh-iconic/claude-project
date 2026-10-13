@@ -176,7 +176,7 @@ This module focuses on the three different *interfaces* (JSON schema, CLI script
 To run the custom tool runner in **live mode** (where the Anthropic API selects which tool to call instead of keyword matching):
 
 1. Ensure `ANTHROPIC_API_KEY` is set in the `.env` file at the project root (or as an environment variable)
-2. Optionally set `CLAUDE_MODEL` to override the default model (defaults to `claude-sonnet-4-20250514`)
+2. Optionally set `CLAUDE_MODEL` to override the default model (defaults to `claude-sonnet-4-6`)
 3. Add the `--live` flag:
 
 ```bash

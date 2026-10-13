@@ -13,8 +13,8 @@ from enum import Enum
 
 class ModelId(str, Enum):
     """Supported Claude model identifiers."""
-    HAIKU = "claude-3-5-haiku-20241022"
-    SONNET = "claude-sonnet-4-20250514"
+    HAIKU = "claude-haiku-4-5"
+    SONNET = "claude-sonnet-4-6"
 
 
 @dataclass(frozen=True)
@@ -44,10 +44,10 @@ class ModelConfig:
 
 PRICING = {
     ModelId.HAIKU: ModelPricing(
-        input_per_mtok=0.80,
-        output_per_mtok=4.00,
-        cache_write_per_mtok=1.00,
-        cache_read_per_mtok=0.08,
+        input_per_mtok=1.00,
+        output_per_mtok=5.00,
+        cache_write_per_mtok=1.25,
+        cache_read_per_mtok=0.10,
     ),
     ModelId.SONNET: ModelPricing(
         input_per_mtok=3.00,
@@ -65,7 +65,7 @@ PRICING = {
 MODELS = {
     ModelId.HAIKU: ModelConfig(
         id=ModelId.HAIKU,
-        display_name="Claude 3.5 Haiku",
+        display_name="Claude Haiku 4.5",
         pricing=PRICING[ModelId.HAIKU],
         max_output_tokens=8192,
         context_window=200_000,
@@ -74,7 +74,7 @@ MODELS = {
     ),
     ModelId.SONNET: ModelConfig(
         id=ModelId.SONNET,
-        display_name="Claude Sonnet 4",
+        display_name="Claude Sonnet 4.6",
         pricing=PRICING[ModelId.SONNET],
         max_output_tokens=16_384,
         context_window=200_000,

@@ -9,25 +9,25 @@ model:
   # Per-task model assignments — deliberate choice, not defaults
   tasks:
     simple_lookup:
-      name: "claude-3-5-haiku-20241022"
+      name: "claude-haiku-4-5"
       max_tokens: 512
       temperature: 0.0
-      justification: "Order/account lookups are deterministic data retrieval — Haiku is 3.75x cheaper and 2.5x faster"
+      justification: "Order/account lookups are deterministic data retrieval — Haiku is 3x cheaper and 2.5x faster"
 
     classification:
-      name: "claude-3-5-haiku-20241022"
+      name: "claude-haiku-4-5"
       max_tokens: 300
       temperature: 0.0
       justification: "Keyword-heavy classification doesn't need deep reasoning — Haiku handles it accurately"
 
     complex_reasoning:
-      name: "claude-sonnet-4-20250514"
+      name: "claude-sonnet-4-6"
       max_tokens: 2048
       temperature: 0.3
       justification: "Nuanced customer responses and multi-step reasoning need Sonnet's depth"
 
     specialist:
-      name: "claude-sonnet-4-20250514"
+      name: "claude-sonnet-4-6"
       max_tokens: 1024
       temperature: 0.2
       justification: "Chain-of-thought analysis for ambiguous/multi-category cases"

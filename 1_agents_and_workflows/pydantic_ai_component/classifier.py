@@ -95,7 +95,7 @@ def _build_agent() -> "Agent[ClassifierDeps, ClassificationResult]":
     # Determine the model to use
     api_key = os.getenv("ANTHROPIC_API_KEY", "")
     if api_key and not api_key.startswith("sk-ant-your"):
-        chosen_model = os.getenv("CLAUDE_MODEL", os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022"))
+        chosen_model = os.getenv("CLAUDE_MODEL", os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-6"))
         model = f"anthropic:{chosen_model}"
     else:
         model = "test"  # PydanticAI's built-in test model

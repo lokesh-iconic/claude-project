@@ -9,7 +9,7 @@
 model:
   # Pin to a specific model version — never use an alias like "claude-3-sonnet"
   # that could silently change underneath you.
-  name: "claude-3-5-sonnet-20241022"
+  name: "claude-sonnet-4-6"
   max_tokens: 2048
   temperature: 0.2  # Low temperature for factual Q&A; higher values risk hallucination
 

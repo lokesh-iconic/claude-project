@@ -7,7 +7,7 @@ into a single deployable system. Customer messages flow through:
 
 1. **Security guardrails** → regex-based injection detection (pre-processing)
 2. **Context manager** → prunes/compacts conversation history to prevent bloat
-3. **Model router** → selects Haiku ($0.80/MTok) or Sonnet ($3.00/MTok) per task
+3. **Model router** → selects Haiku ($1.00/MTok) or Sonnet ($3.00/MTok) per task
 4. **Agentic loop** → model decides which tool to invoke
 5. **Formatting hook** → deterministic greeting/sign-off enforcement
 6. **Content policy** → post-processing output sanitization

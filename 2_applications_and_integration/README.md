@@ -130,7 +130,7 @@ See `app/session.py` module docstring for all 5 decisions:
 
 ### 6. Configuration Management
 `config.yaml` + `app/config.py`:
-- **Model pinning**: `claude-sonnet-4-20250514` (never an alias)
+- **Model pinning**: `claude-sonnet-4-6` (an explicit model ID, set in `config.yaml`)
 - **Prompt versioning**: `system_v1` and `system_v2` with timestamps and change notes
 - **Active version selector**: `prompts.active_version` key
 - Changes tracked in git -- a prompt update shows as a config diff
@@ -167,7 +167,7 @@ In these cases, the cost savings (50% discount) and higher throughput of the Bat
 |----------|--------|
 | Could another engineer clone your repo and understand the session-handling logic without asking you first? | **Yes** — `app/session.py` has a detailed module docstring documenting all 5 decisions (create, persist, summarize, restart, expire) with rationale. `config.yaml` exposes session timeout as a named config key. The REST API endpoints (`/reset`, `DELETE`) map directly to session lifecycle. |
 | Does prompt caching actually reduce token usage on a second question against the same document — check the numbers, don't assume? | **Yes** — `app/claude_client.py` places the document in a system prompt block with `cache_control: {"type": "ephemeral"}`. The response `usage` field reports `cache_creation_input_tokens` on the first call and `cache_read_input_tokens` on subsequent calls. Cache reads cost ~10% of full input. |
-| Is your model version pinned somewhere explicit, or would a silent Anthropic model update change your app's behavior without anyone noticing? | **Pinned** — `config.yaml` specifies `model: claude-sonnet-4-20250514` (a dated version, not an alias like `claude-3-sonnet`). `app/config.py` reads this at startup. A model change requires an explicit config edit that shows up as a git diff. |
+| Is your model version pinned somewhere explicit, or would a silent Anthropic model update change your app's behavior without anyone noticing? | **Pinned** — `config.yaml` specifies `model: claude-sonnet-4-6` (an explicit model ID, not a family alias like `claude-3-sonnet`). `app/config.py` reads this at startup. A model change requires an explicit config edit that shows up as a git diff. |
 
 ## Mock vs. Live Mode
 

@@ -104,7 +104,7 @@ def run_specialist(
                 user_content += f"\n\nConversation context: {context}"
 
             response = client.messages.create(
-                model=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-20250514"),
+                model=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6"),
                 max_tokens=500,
                 system=SPECIALIST_PROMPT,
                 messages=[{"role": "user", "content": user_content}],

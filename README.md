@@ -4,6 +4,73 @@ A multi-module Python repository demonstrating Claude API integration patterns,
 agent architectures, and production-grade application design — culminating in a
 capstone project that integrates all 8 domains into a unified support assistant.
 
+## What This Project Is About
+
+This repository is a hands-on learning portfolio for building applications on top of
+Claude. Each numbered folder is a self-contained exercise on one skill an AI application
+developer needs, and the capstone combines all of them into one working product.
+
+| Skill | Where | The question it answers |
+|-------|-------|-------------------------|
+| Workflows vs. agents | `1_` | When should a fixed pipeline be used, and when should Claude decide the steps? |
+| Application building | `2_` | How do you build a real API around Claude (streaming, caching, sessions, config)? |
+| Claude Code | `3_` | How do you configure Claude Code for a repository (CLAUDE.md, commands, headless mode)? |
+| Evals and debugging | `4_` | When something breaks, is it a code bug or a model-output problem? |
+| Model selection | `5_` | Which model, and which cost/latency trade-offs, fit which workload? |
+| Prompt and context engineering | `6_` | How do you keep a long conversation reliable and well-formatted? |
+| Security | `7_` | How do you defend against prompt injection and protect secrets? |
+| Tools and MCP | `8_` | When should a capability be a custom tool, a Skill, or an MCP server? |
+| Capstone | `capstone/` | Can all of the above work together in one customer-support assistant? |
+
+Most modules use the same running example (a customer-support assistant that triages
+tickets, looks up orders, and answers questions) so the techniques can be compared
+directly. Every module is designed to run without an API key in **mock mode**, which uses
+deterministic canned responses, and to switch to **live mode** automatically when
+`ANTHROPIC_API_KEY` is set. See each module's own README for details.
+
+## What Is the Anthropic SDK, and Why Is It Used?
+
+The **Anthropic SDK** is Anthropic's official Python library (the `anthropic` package,
+listed in `pyproject.toml`) for calling Claude from code. Without it, every call would be
+a hand-built HTTP request to the Claude API: you would write the headers, authentication,
+JSON bodies, retries, and response parsing yourself.
+
+The SDK wraps that in a typed Python interface, for example:
+
+```python
+import anthropic
+
+client = anthropic.Anthropic()          # reads ANTHROPIC_API_KEY from the environment
+response = client.messages.create(
+    model="claude-sonnet-4-6",
+    max_tokens=1024,
+    messages=[{"role": "user", "content": "Summarize this ticket..."}],
+)
+```
+
+This project uses it because it provides, out of the box, the things every module needs:
+
+- **The Messages API**: sending a conversation and reading Claude's reply.
+- **Streaming**: receiving a response token by token (used by the DocuQuery app in module 2).
+- **Tool use**: letting Claude request that your code run a function, which is the basis of
+  the agents in modules 1, 4, 8 and the capstone.
+- **Prompt caching and extended thinking**: the cost and quality features measured in
+  modules 2 and 5.
+- **Authentication, automatic retries, and typed errors**: for example
+  `anthropic.AuthenticationError` and `anthropic.NotFoundError`, which the modules use to
+  detect a bad key or an unknown model and fall back to mock mode.
+- **Usage data**: every response reports its input and output tokens, which the cost
+  trackers use.
+
+Two clarifications:
+
+- The agents here are built as a plain loop over the SDK's Messages API (call Claude, run
+  the requested tool, send the result back, repeat). They do not use the separate
+  *Claude Agent SDK* product.
+- The SDK is the library for building applications **with** Claude. *Claude Code* (module
+  3) is a different thing: Anthropic's command-line coding assistant that you use
+  interactively or from scripts.
+
 ## Project Structure
 
 ```

@@ -32,7 +32,7 @@ from shared import (
 
 
 def _get_model() -> str:
-    return os.getenv("CLAUDE_MODEL", os.getenv("ANTHROPIC_MODEL", "claude-3-5-sonnet-20241022"))
+    return os.getenv("CLAUDE_MODEL", os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-6"))
 
 
 # ---------------------------------------------------------------------------
