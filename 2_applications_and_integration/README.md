@@ -167,7 +167,7 @@ In these cases, the cost savings (50% discount) and higher throughput of the Bat
 |----------|--------|
 | Could another engineer clone your repo and understand the session-handling logic without asking you first? | **Yes** — `app/session.py` has a detailed module docstring documenting all 5 decisions (create, persist, summarize, restart, expire) with rationale. `config.yaml` exposes session timeout as a named config key. The REST API endpoints (`/reset`, `DELETE`) map directly to session lifecycle. |
 | Does prompt caching actually reduce token usage on a second question against the same document — check the numbers, don't assume? | **Yes** — `app/claude_client.py` places the document in a system prompt block with `cache_control: {"type": "ephemeral"}`. The response `usage` field reports `cache_creation_input_tokens` on the first call and `cache_read_input_tokens` on subsequent calls. Cache reads cost ~10% of full input. |
-| Is your model version pinned somewhere explicit, or would a silent Anthropic model update change your app's behavior without anyone noticing? | **Pinned** — `config.yaml` specifies `model: claude-sonnet-4-6` (an explicit model ID, not a family alias like `claude-3-sonnet`). `app/config.py` reads this at startup. A model change requires an explicit config edit that shows up as a git diff. |
+| Is your model version pinned somewhere explicit, or would a silent Anthropic model update change your app's behavior without anyone noticing? | **Pinned** — `config.yaml` specifies `model.name: claude-sonnet-4-6` (an explicit model ID, not a family alias like `claude-3-sonnet`). `app/config.py` reads this at startup. The `CLAUDE_MODEL` / `ANTHROPIC_MODEL` environment variables override it when set, so keep them unset in deployments that must stay pinned. |
 
 ## Mock vs. Live Mode
 
@@ -179,11 +179,11 @@ Both modes serve identical API responses (same Pydantic schemas), so the client 
 To run in **live mode**:
 
 1. Set a valid `ANTHROPIC_API_KEY` in the `.env` file at the project root
-2. Optionally set `CLAUDE_MODEL` in `config.yaml` to override the default model
+2. The model is pinned by `model.name` in `config.yaml`. The `CLAUDE_MODEL` environment variable, if set, takes precedence over it (leave it unset to keep the pin)
 3. Start the server normally — live mode is auto-detected when the API key is present:
 
 ```bash
-uv run python .\2_applications_and_integration\app\main.py
+uv run python -m uvicorn app.main:app --app-dir 2_applications_and_integration
 ```
 
 If the API key is missing or invalid, the server falls back to mock mode automatically with a warning.

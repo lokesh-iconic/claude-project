@@ -65,7 +65,7 @@ def _scan_file(filepath: str) -> dict:
         if stripped.startswith("#"):
             continue
 
-        # Check for hardcoded secrets
+        # Check for hardcoded secrets: one finding per line, first matching pattern wins
         for pattern, description in _HARDCODED_SECRET_PATTERNS:
             if pattern.search(line):
                 findings["hardcoded_secrets"].append({
@@ -73,6 +73,7 @@ def _scan_file(filepath: str) -> dict:
                     "issue": description,
                     "code": stripped[:80],
                 })
+                break
 
         # Check for proper management
         for pattern, description in _PROPER_SECRET_PATTERNS:

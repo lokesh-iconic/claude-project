@@ -32,6 +32,8 @@ from dotenv import load_dotenv, find_dotenv
 
 load_dotenv(find_dotenv(usecwd=True), override=True)
 
+from capstone.models.router import ModelId
+
 
 SPECIALIST_PROMPT = """\
 You are a SPECIALIST support query analyst for COMPLEX customer messages that
@@ -104,7 +106,7 @@ def run_specialist(
                 user_content += f"\n\nConversation context: {context}"
 
             response = client.messages.create(
-                model=os.getenv("CLAUDE_MODEL", "claude-sonnet-4-6"),
+                model=ModelId.SONNET.value,
                 max_tokens=500,
                 system=SPECIALIST_PROMPT,
                 messages=[{"role": "user", "content": user_content}],

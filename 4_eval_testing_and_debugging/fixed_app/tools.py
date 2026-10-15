@@ -1,15 +1,8 @@
 """
-fixed_app/tools.py — Tool definitions with Bug 1 FIXED.
+fixed_app/tools.py — Tool definitions for the ticket triage agent.
 
-FIX: Restored `is_ambiguous` to read from args.get("is_ambiguous", False)
-instead of being hardcoded to False. Ambiguous tickets now correctly
-trigger escalation during routing.
-
-DIFF FROM BROKEN VERSION:
-    # broken:
-    is_ambiguous = False
-    # fixed:
-    is_ambiguous = args.get("is_ambiguous", False)
+The code in this file is identical to broken_app/tools.py except in execute_route_ticket(),
+which reads `is_ambiguous` from its arguments.
 """
 
 from __future__ import annotations
@@ -36,7 +29,7 @@ def _get_model() -> str:
 
 
 # ---------------------------------------------------------------------------
-# Tool Schemas
+# Tool Schemas (JSON Schema format for Anthropic API)
 # ---------------------------------------------------------------------------
 
 TOOL_DEFINITIONS = [
@@ -90,13 +83,14 @@ TOOL_DEFINITIONS = [
         "name": "draft_response",
         "description": (
             "Draft a customer-facing response to the ticket. Should be called "
-            "after classification and routing."
+            "after classification and routing. The response will be automatically "
+            "formatted according to company standards via a hook."
         ),
         "input_schema": {
             "type": "object",
             "properties": {
                 "ticket_id": {"type": "string", "description": "Unique ticket identifier"},
-                "customer_name": {"type": "string", "description": "Customer's name"},
+                "customer_name": {"type": "string", "description": "Customer's name for personalization"},
                 "category": {"type": "string", "description": "Ticket category"},
                 "team": {"type": "string", "description": "Assigned support team"},
                 "priority": {"type": "string", "description": "Ticket priority"},
@@ -109,7 +103,9 @@ TOOL_DEFINITIONS = [
     {
         "name": "escalate_to_specialist",
         "description": (
-            "Delegate an ambiguous or complex ticket to a specialist subagent."
+            "Delegate an ambiguous or complex ticket to a specialist subagent "
+            "for deeper analysis. Use when the main classification is uncertain "
+            "(confidence < 0.7) or the ticket spans multiple categories."
         ),
         "input_schema": {
             "type": "object",
@@ -117,8 +113,14 @@ TOOL_DEFINITIONS = [
                 "ticket_id": {"type": "string", "description": "Unique ticket identifier"},
                 "subject": {"type": "string", "description": "Ticket subject line"},
                 "body": {"type": "string", "description": "Ticket body text"},
-                "initial_category": {"type": "string", "description": "Best-guess category"},
-                "reason_for_escalation": {"type": "string", "description": "Why specialist review is needed"},
+                "initial_category": {
+                    "type": "string",
+                    "description": "Best-guess category from initial classification",
+                },
+                "reason_for_escalation": {
+                    "type": "string",
+                    "description": "Why the ticket needs specialist review",
+                },
             },
             "required": ["ticket_id", "subject", "body", "reason_for_escalation"],
         },
@@ -151,11 +153,11 @@ def execute_classify_ticket(args: dict, client=None) -> dict:
             )
             return json.loads(response.content[0].text)
         except Exception as e:
-            print(f"    [Notice: classify API error ({e}) — mock fallback]")
+            print(f"    [Notice: Anthropic API error in classify tool ({e}) — using mock fallback]")
 
     # Mock mode
     text = (args.get("subject", "") + " " + args.get("body", "")).lower()
-    if any(w in text for w in ["nothing works", "frustrated", "broken", "nobody", "fwd:", "re: re:"]):
+    if any(w in text for w in ["nothing works", "frustrated", "broken", "nobody", "fwd:", "re: re:", "quiero", "necesito"]):
         return {"category": "general", "priority": "high", "confidence": 0.45,
                 "reasoning": "Vague complaint spanning multiple areas", "is_ambiguous": True}
     elif any(w in text for w in ["billing", "charged", "invoice", "refund", "promo", "payment"]):
@@ -177,9 +179,8 @@ def execute_classify_ticket(args: dict, client=None) -> dict:
 
 def execute_route_ticket(args: dict, client=None) -> dict:
     """
-    Execute the route_ticket tool — BUG 1 FIXED.
+    Execute the route_ticket tool.
 
-    FIX: is_ambiguous now reads from args instead of being hardcoded to False.
     """
     if client is not None:
         try:
@@ -191,16 +192,19 @@ def execute_route_ticket(args: dict, client=None) -> dict:
                     "(billing/engineering/account_mgmt/product/general_support) and decide "
                     "if escalation is needed. Return JSON with: team, escalate (bool), routing_reason."
                 ),
-                messages=[{"role": "user", "content": json.dumps(args)}],
+                messages=[{
+                    "role": "user",
+                    "content": json.dumps(args),
+                }],
             )
             return json.loads(response.content[0].text)
         except Exception as e:
-            print(f"    [Notice: route API error ({e}) — mock fallback]")
+            print(f"    [Notice: Anthropic API error in route tool ({e}) — using mock fallback]")
 
-    # Mock mode — FIXED: is_ambiguous properly read from args
+    # Mock mode
     cat = args.get("category", "general")
     priority = args.get("priority", "medium")
-    is_ambiguous = args.get("is_ambiguous", False)  # ← FIX: was hardcoded to False
+    is_ambiguous = args.get("is_ambiguous", False)
 
     team_map = {
         "billing": "billing", "technical": "engineering",
@@ -218,7 +222,7 @@ def execute_route_ticket(args: dict, client=None) -> dict:
 
 
 def execute_draft_response(args: dict, client=None) -> dict:
-    """Execute the draft_response tool."""
+    """Execute the draft_response tool (before hook formatting)."""
     if client is not None:
         try:
             response = client.messages.create(
@@ -241,8 +245,9 @@ def execute_draft_response(args: dict, client=None) -> dict:
             )
             return json.loads(response.content[0].text)
         except Exception as e:
-            print(f"    [Notice: draft API error ({e}) — mock fallback]")
+            print(f"    [Notice: Anthropic API error in draft tool ({e}) — using mock fallback]")
 
+    # Mock mode
     return {
         "subject_line": f"Re: {args.get('ticket_subject', 'Your ticket')}",
         "body": (
@@ -259,6 +264,7 @@ def execute_draft_response(args: dict, client=None) -> dict:
     }
 
 
+# Tool name → executor mapping
 TOOL_EXECUTORS = {
     "classify_ticket": execute_classify_ticket,
     "route_ticket": execute_route_ticket,

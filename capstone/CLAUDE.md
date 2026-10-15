@@ -20,6 +20,8 @@ capstone/
 ├── CLAUDE.md              ← you are here
 ├── config.yaml            ← model pinning, prompt versioning
 ├── requirements_spec.md   ← what "done" means
+├── .claude/commands/
+│   └── run-evals.md       ← /run-evals slash command
 ├── app.py                 ← FastAPI web app
 ├── run_capstone.py        ← entry point (--test, --server, --interactive)
 ├── agent/

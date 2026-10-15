@@ -83,6 +83,15 @@ def analyze_ticket_trace(trace: TicketTrace) -> list[str]:
                 f"The ambiguity signal was lost between classification and routing."
             )
 
+        # Check 1b: field arrives at the router but does not influence its output
+        if (route_input.get("is_ambiguous") and route_result
+                and not route_result.get("escalate")):
+            anomalies.append(
+                f"IGNORED FIELD: route input has is_ambiguous=True, but routing "
+                f"returned escalate={route_result.get('escalate')}. The router did not "
+                f"act on the ambiguity signal it received."
+            )
+
         # Check if priority was carried correctly
         if classify_result.get("priority") != route_input.get("priority"):
             anomalies.append(
@@ -136,6 +145,7 @@ def trace_pipeline_run(
     priority_mismatches = 0
     escalation_failures = 0
     dropped_fields = 0
+    ignored_fields = 0
 
     for ticket in tickets:
         ticket_trace = TicketTrace(
@@ -186,6 +196,8 @@ def trace_pipeline_run(
                 escalation_failures += 1
             if "DROPPED FIELD" in anomaly:
                 dropped_fields += 1
+            if "IGNORED FIELD" in anomaly:
+                ignored_fields += 1
 
         pipeline_trace.ticket_traces.append(ticket_trace)
 
@@ -199,6 +211,7 @@ def trace_pipeline_run(
         "priority_mismatches": priority_mismatches,
         "escalation_failures": escalation_failures,
         "dropped_fields": dropped_fields,
+        "ignored_fields": ignored_fields,
     }
 
     return pipeline_trace
@@ -220,6 +233,7 @@ def format_trace_report(trace: PipelineTrace) -> str:
     lines.append(f"    Priority mismatches:   {s['priority_mismatches']}")
     lines.append(f"    Escalation failures:   {s['escalation_failures']}")
     lines.append(f"    Dropped fields:        {s['dropped_fields']}")
+    lines.append(f"    Ignored fields:        {s['ignored_fields']}")
     lines.append("")
 
     # Per-ticket details (only anomalous tickets)

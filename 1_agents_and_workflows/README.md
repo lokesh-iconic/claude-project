@@ -1,6 +1,6 @@
 # Agents & Workflows — Support Ticket Triage System
 
-A support ticket auto-triage system built **two ways** to demonstrate when to use a deterministic workflow vs. an autonomous agent, and to prove competence with the Claude Agent SDK patterns, hooks, subagents, and the PydanticAI framework.
+A support ticket auto-triage system built **two ways** to demonstrate when to use a deterministic workflow vs. an autonomous agent, and to demonstrate a tool-calling agent loop, hooks, subagents, and the PydanticAI framework.
 
 ## Problem Statement
 
@@ -14,8 +14,7 @@ Incoming support tickets need to be automatically classified, routed to the righ
 ```
 1_agents_and_workflows/
 ├── README.md                          ← You are here
-├── requirements.txt                   ← Dependencies
-├── .env.example                       ← API key template
+├── requirements.txt                   ← Module-level dependency list (the repo root pyproject.toml is the source of truth)
 ├── tickets.py                         ← 20 sample support tickets
 ├── shared.py                          ← Shared types, enums, formatting rules
 │
@@ -43,7 +42,7 @@ Incoming support tickets need to be automatically classified, routed to the righ
 # From the repository root:
 uv sync
 
-# (Optional) Configure API key for live mode in .env
+# (Optional) Copy .env.example (repo root) to .env and set ANTHROPIC_API_KEY for live mode
 # Without an API key, everything runs in mock mode with deterministic responses
 ```
 
@@ -91,7 +90,7 @@ The `subagent.py` module handles tickets that don't clearly fit one category. It
 - **Richer prompt**: The specialist gets few-shot examples of tricky tickets and chain-of-thought instructions. Inlining this would bloat the main agent's context window.
 - **Independent optimization**: The specialist's prompt can be tuned and evaluated separately. Its accuracy on ambiguous tickets doesn't interfere with the main agent's performance on clear-cut ones.
 - **Conditional invocation**: The subagent is only called when needed (confidence < 0.7 or `is_ambiguous=True`). Clear-cut tickets skip it entirely, saving tokens and latency.
-- **SDK alignment**: Maps directly to `AgentDefinition` in the Claude Agent SDK.
+- **Pattern alignment**: Mirrors the subagent-definition pattern of the Claude Agent SDK (a named specialist with its own prompt and tools), implemented here as a plain function over the Messages API.
 
 ### PydanticAI: What It Made Easier and Harder
 
@@ -106,7 +105,7 @@ See the detailed analysis in [`pydantic_ai_component/classifier.py`](pydantic_ai
 | Requirement | Where It's Demonstrated |
 |-------------|------------------------|
 | Apply the decision criteria for choosing a workflow versus an agent | [Workflow vs. Agent table](#workflow-vs-agent-when-to-use-which) above — documents when each is the right choice |
-| Construct an agent with the Claude Agent SDK, including a custom loop and at least one hook | [`agent/runner.py`](agent/runner.py) (agentic loop), [`agent/hooks.py`](agent/hooks.py) (`PostToolUse` hook) |
+| Construct an agent with a custom tool-calling loop (built on the Anthropic SDK Messages API) and at least one hook | [`agent/runner.py`](agent/runner.py) (agentic loop), [`agent/hooks.py`](agent/hooks.py) (`PostToolUse` hook) |
 | Use an agentic abstraction framework (e.g. LangGraph or PydanticAI) for at least one component | [`pydantic_ai_component/classifier.py`](pydantic_ai_component/classifier.py) — classification rebuilt with PydanticAI |
 | Delegate a narrow subtask to a subagent and justify why it's a subagent and not inline logic | [`agent/subagent.py`](agent/subagent.py) — see [justification above](#why-a-subagent-for-ambiguous-tickets-not-inline-logic) |
 
@@ -125,7 +124,7 @@ See the detailed analysis in [`pydantic_ai_component/classifier.py`](pydantic_ai
 
 | Requirement | Implementation |
 |-------------|----------------|
-| Set up API access and the Claude Agent SDK | Root `.env` file + `uv sync` installs `anthropic` and `pydantic-ai` |
+| Set up API access and SDK | Root `.env` (copied from `.env.example`) + `uv sync` installs `anthropic` and `pydantic-ai` |
 | Assemble 15-20 sample support tickets covering clear-cut and ambiguous cases | [`tickets.py`](tickets.py) — 20 tickets (15 clear-cut + 5 ambiguous) |
 
 ## Sample Tickets
@@ -152,8 +151,8 @@ The ambiguous tickets are designed to test edge cases:
 | Question | Answer |
 |----------|--------|
 | Can you name, in one sentence each, why the workflow version is right for some tickets and the agent version is right for others? | **Workflow** is right for clear-cut tickets (single category, obvious priority) because it's faster, cheaper (exactly 3 API calls), and fully auditable. **Agent** is right for ambiguous tickets (multi-topic, vague, conflicting signals) because it can loop back, re-classify, and escalate to a specialist subagent. |
-| Does your hook enforcement actually hold on tickets where the prompt alone previously failed to comply? | **Yes** — `hooks.py` implements `enforce_formatting()` as a deterministic post-processing step that guarantees greeting, sign-off, and ticket reference are present in every draft, regardless of what the model produced. It's a pure function, not a prompt instruction. |
-| Did delegating to a subagent measurably improve accuracy on ambiguous tickets, or just add latency? | **Improved accuracy** — the subagent uses a specialized prompt with few-shot examples of tricky tickets and chain-of-thought reasoning. It correctly re-classifies ambiguous tickets that the main classifier flags with low confidence or `is_ambiguous=True`. Without it, ambiguous tickets default to the main agent's broader (less specialized) classification. |
+| Does your hook enforcement actually hold on tickets where the prompt alone previously failed to comply? | **Yes by construction** — `hooks.py` implements `enforce_formatting()` as a deterministic post-processing step that adds the greeting, sign-off, and ticket reference to every draft regardless of what the model produced. It is a pure function, not a prompt instruction, and `run_comparison.py` reports how many corrections it made. |
+| Did delegating to a subagent measurably improve accuracy on ambiguous tickets, or just add latency? | **Not measured in mock mode.** The subagent uses a specialized prompt with few-shot examples of tricky tickets and is only invoked when confidence is below 0.7 or `is_ambiguous=True`. `run_comparison.py` logs where the workflow and agent outputs diverge on the 5 ambiguous tickets; whether that is an accuracy gain or only extra latency has to be judged against labelled outcomes from a live run. |
 
 ## Mock vs. Live Mode
 

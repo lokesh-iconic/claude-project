@@ -44,7 +44,7 @@ uv run python capstone/security/secrets_audit.py
 |--------|---------------------|-----------|
 | **1 — Agents & Workflows** | Agentic orchestrator, PostToolUse formatting hook, specialist subagent | `agent/orchestrator.py`, `agent/hooks.py`, `agent/subagent.py` |
 | **2 — Applications** | FastAPI web app, session handling, config management, requirements spec | `app.py`, `config.yaml`, `requirements_spec.md` |
-| **3 — Claude Code** | Project CLAUDE.md with architecture docs and `/run-evals` slash command | `CLAUDE.md` |
+| **3 — Claude Code** | Project CLAUDE.md with architecture docs and `/run-evals` slash command | `CLAUDE.md`, `.claude/commands/run-evals.md` |
 | **4 — Eval & Debugging** | 10 eval cases (4 core, 3 edge, 2 adversarial, 1 regression) + 2 seeded bugs | `eval/eval_suite.py`, `eval/seeded_bugs.py` |
 | **5 — Model Selection** | Per-task model routing (Haiku vs Sonnet) with cost tracking and caching | `models/router.py`, `models/cost_tracker.py` |
 | **6 — Prompt & Context** | 3-stage context pruning/compaction + defensive JSON parsing | `context/manager.py` |
@@ -104,6 +104,8 @@ capstone/
 ├── config.yaml            ← model pinning, prompt versioning (Domain 2)
 ├── requirements_spec.md   ← what "done" means (Domain 2)
 ├── ship_note.md           ← one-page handoff document
+├── .claude/commands/
+│   └── run-evals.md       ← /run-evals slash command (Domain 3)
 ├── app.py                 ← FastAPI web app with chat UI (Domain 2)
 ├── run_capstone.py        ← entry point (--test, --server, --interactive)
 ├── agent/
@@ -141,12 +143,12 @@ capstone/
 
 ## Seeded Bugs (Domain 4)
 
-Two deliberately seeded bugs are documented with full trace analysis in `eval/seeded_bugs.py`:
+Two deliberately seeded bugs are documented with trace analysis in `eval/seeded_bugs.py`:
 
-1. **Bug 1 — Router Fallback**: Environment variable `CLAUDE_MODEL` overrides per-task model routing, sending all requests to Sonnet (3x cost increase)
-2. **Bug 2 — Priority Case**: Escalation ticket parser doesn't normalize uppercase priority values from model output (e.g., `"URGENT"` → should be `"urgent"`)
+1. **Bug 1 — Router Fallback** (fixed, guarded): an environment variable `CLAUDE_MODEL` would override per-task model routing in the orchestrator and send every request to Sonnet (3x cost). The orchestrator now trusts the router. Reintroducing the override makes EVAL-001 fail (it asserts a lookup is served by Haiku) and makes `verify_bug_1_is_fixed()` fail.
+2. **Bug 2 — Priority Case** (left in the code on purpose): the escalation tool does not normalize an uppercase priority from the model (`"URGENT"` stays `"URGENT"`), so the urgent response-time branch is skipped. The 10 eval cases do not exercise it because mock mode always returns lowercase; `verify_bug_2_is_fixed()` detects it and the runner reports it as `DETECTED (expected)` without failing the run.
 
-Both include reproduction steps, trace analysis, and documented fixes.
+`run_evals.py` exits non-zero if an eval case fails or if Bug 1 is present; Bug 2 being detected is the expected outcome.
 
 ## Eval Results
 
@@ -170,23 +172,24 @@ Result: 10/10 cases passed
 
 ### 1. Does the finished assistant still pass every individual-domain check from the eight domain assignments?
 
-**Yes.** Running `uv run python main.py` after the capstone integration produces:
+**Yes.** Running `uv run python main.py` in mock mode (no API key) produces:
 
 ```
-  1    Agents & Workflows                         ✓ PASS    4.3s
-  2    Applications & Integration                 ✓ PASS    1.1s
-  3    Claude Code                                ✓ PASS    0.3s
-  4    Eval, Testing & Debugging                  ✓ PASS    0.3s
-  5    Model Selection & Optimization             ✓ PASS    4.8s
-  6    Prompt & Context Engineering               ✓ PASS    1.6s
-  7    Security & Safety                          ✓ PASS    0.2s
-  8    Tools and MCPs                             ✓ PASS    3.9s
+  1    Agents & Workflows                         ✓ PASS    1.5s
+  2    Applications & Integration                 ✓ PASS    4.4s
+  3    Claude Code                                ✓ PASS    1.3s
+  4    Eval, Testing & Debugging                  ✓ PASS    1.5s
+  5    Model Selection & Optimization             ✓ PASS    5.5s
+  6    Prompt & Context Engineering               ✓ PASS    2.4s
+  7    Security & Safety                          ✓ PASS    0.8s
+  8    Tools and MCPs                             ✓ PASS    13.0s
 
-  Total: 8/8 modules passed in 16.4s
+  Total: 8/8 modules passed in 30.3s
 ```
 
-The capstone lives in `capstone/` and **imports from** (never modifies) the domain modules.
-No existing module code was changed during integration.
+Timings vary by machine. The capstone lives in `capstone/` and is self-contained: it has its own
+versions of the hook, guardrail, router and context-manager code adapted from the domain modules,
+and does not import from them, so running or changing it does not affect the domain modules.
 
 ### 2. Could another engineer deploy this from your repo and CLAUDE.md without a walkthrough?
 
@@ -203,17 +206,21 @@ and `requirements_spec.md` defines what "done" means. No tribal knowledge requir
 
 ### 3. Does the eval suite actually catch the two seeded bugs if you reintroduce them?
 
-**Yes.** The seeded bug verification runs automatically with every eval run:
+**Yes, for both.** The seeded bug verification runs automatically with every eval run:
 
-- **Bug 1 (Router Fallback)**: `verify_bug_1_is_fixed()` checks that `TaskType.SIMPLE_LOOKUP`
-  maps to Haiku. If the `os.getenv("CLAUDE_MODEL")` override is reintroduced, this check fails.
+- **Bug 1 (Router Fallback)**: `verify_bug_1_is_fixed()` sends a simple order lookup through the
+  real orchestrator with `CLAUDE_MODEL` set and checks that Haiku served it. With the
+  `os.getenv("CLAUDE_MODEL", ...)` override reintroduced in `orchestrator.py`, both this check
+  and EVAL-001 fail and the run exits non-zero (verified by reintroducing it in a scratch copy).
 - **Bug 2 (Priority Case)**: `verify_bug_2_is_fixed()` passes `"URGENT"` (uppercase) and
-  checks if it's normalized to `"urgent"`. Currently shows **FAIL** because the bug is
-  deliberately still seeded — proving the detection works.
+  checks if it's normalized to `"urgent"`. The bug is deliberately still seeded, so the runner
+  reports it as detected.
 
 ```
-  [PASS] Bug 1 (Router Fallback)    ✓ Correctly routes to Haiku
-  [FAIL] Bug 2 (Priority Case)      ✗ 'URGENT' not normalized (seeded bug)
+  [FIXED] Bug 1 (Router Fallback)
+    Bug 1 fixed: simple lookup routed to claude-haiku-4-5 even with CLAUDE_MODEL set
+  [DETECTED (expected)] Bug 2 (Priority Case)
+    Bug 2 present: priority is 'URGENT', expected 'urgent'
 ```
 
 ### 4. Does the injection attempt from Phase 7 still fail against your current build?

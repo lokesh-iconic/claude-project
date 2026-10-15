@@ -6,7 +6,7 @@ Take a working Claude integration, deliberately break it in two different layers
 
 This project demonstrates the ability to correctly **isolate integration-layer bugs from model-output problems** in a Claude application. Two bugs were introduced into the working Domain 1 Agent (support ticket triage system):
 
-1. **Bug 1 (Integration Layer)**: A dropped field in the data flow between tools
+1. **Bug 1 (Integration Layer)**: A tool that ignores a field it is given (`is_ambiguous` in the router)
 2. **Bug 2 (Model Output)**: A vague prompt causing inconsistent classification
 
 Both bugs produce similar symptoms ("routing doesn't work right") but require completely different diagnostic approaches and completely different fixes.
@@ -17,23 +17,24 @@ Both bugs produce similar symptoms ("routing doesn't work right") but require co
 4_eval_testing_and_debugging/
 ├── README.md                           ← You are here
 ├── __init__.py
-├── shared.py                           ← Shared types (unchanged from Domain 1)
-├── tickets.py                          ← 20 sample tickets (unchanged from Domain 1)
+├── shared.py                           ← Shared types (copy of the module 1 file)
+├── tickets.py                          ← 20 sample tickets (copy of the module 1 file)
+├── mock_model.py                       ← Simulated model: its priority behaviour depends on the system prompt
 ├── tracer.py                           ← Trace instrumentation + anomaly detection
 │
 ├── broken_app/                         ← Deliberately broken version
 │   ├── __init__.py
 │   ├── tools.py                        ← ⬅ BUG 1: is_ambiguous hardcoded to False
 │   ├── runner.py                       ← ⬅ BUG 2: vague prompt, no priority rubric
-│   ├── hooks.py                        ← Unchanged
-│   └── subagent.py                     ← Unchanged
+│   ├── hooks.py                        ← Same code as fixed_app
+│   └── subagent.py                     ← Same code as fixed_app
 │
 ├── fixed_app/                          ← Both bugs fixed
 │   ├── __init__.py
-│   ├── tools.py                        ← ✅ FIX 1: is_ambiguous read from args
-│   ├── runner.py                       ← ✅ FIX 2: explicit priority rubric in prompt
-│   ├── hooks.py                        ← Unchanged
-│   └── subagent.py                     ← Unchanged
+│   ├── tools.py                        ← is_ambiguous read from args (only code difference from broken_app)
+│   ├── runner.py                       ← explicit priority rubric in the prompt (only difference from broken_app)
+│   ├── hooks.py                        ← Same code as broken_app
+│   └── subagent.py                     ← Same code as broken_app
 │
 ├── diagnosis/
 │   ├── hypothesis.md                   ← Pre-analysis hypotheses (symptom → guess)
@@ -86,10 +87,11 @@ uv run python .\4_eval_testing_and_debugging\run_comparison.py
 | Attribute | Detail |
 |-----------|--------|
 | **File** | `broken_app/runner.py` → `AGENT_SYSTEM_PROMPT` |
-| **What** | Priority guidance removed; replaced with "determine how important it seems" |
+| **What** | Priority guidance removed; replaced with "determine how important each ticket seems and use your best judgment" |
 | **Effect** | Priorities inconsistently assigned (urgent/high → medium) |
 | **Symptom** | Double-charge tickets get `medium` priority instead of `high` |
 | **Why it's non-obvious** | Code is correct. Tool schemas accept all values. The prompt just doesn't constrain enough. |
+| **How mock mode shows it** | `mock_model.py` reads the system prompt. Without the `Priority Rubric` section the simulated model rates everything except feature requests as `medium`; with it, priorities follow the rubric. Swapping the prompt is the only change between the two apps. |
 | **Fix** | Prompt change: explicit URGENT/HIGH/MEDIUM/LOW rubric |
 
 ## Diagnostic Process
@@ -110,15 +112,15 @@ See [`diagnosis/hypothesis.md`](diagnosis/hypothesis.md):
 
 The `tracer.py` module instruments every tool call:
 - Captures inputs and outputs at each step
-- Compares outputs of step N with inputs of step N+1 (detects dropped fields)
+- Compares outputs of step N with inputs of step N+1 (detects dropped fields) and flags a router that receives `is_ambiguous=True` yet does not escalate (ignored field)
 - Compares classifier output with ground truth (detects wrong priorities)
 - Flags anomalies automatically
 
 ### Step 4: Analyze Traces
 
 See [`diagnosis/trace_analysis.md`](diagnosis/trace_analysis.md):
-- **Bug 1**: Trace shows `is_ambiguous=True` in route_args but `False` inside the function → confirmed as integration bug
-- **Bug 2**: Trace shows systematic priority downgrades → confirmed as prompt problem
+- **Bug 1**: Trace shows `is_ambiguous=True` in the route step's inputs but `escalate=False` in its output → the function ignores its own input, confirmed as an integration bug
+- **Bug 2**: Trace shows systematic priority downgrades against ground truth, with no dropped or altered data between steps → confirmed as a prompt problem
 
 ### Step 5: Fix (Layer-Appropriate)
 
@@ -133,7 +135,7 @@ See [`diagnosis/trace_analysis.md`](diagnosis/trace_analysis.md):
 |-------------|------------------------|
 | Identify and classify error types in a Claude application | Bug 1 classified as integration-layer, Bug 2 classified as model-output — see [The Two Bugs](#the-two-bugs) |
 | Select an appropriate recovery strategy per error type | Code fix for Bug 1 (integration), prompt fix for Bug 2 (model output) — see [`fixed_app/`](fixed_app/) |
-| Use trace analysis to identify the actual failure mode | [`tracer.py`](tracer.py) instruments every tool call, detects dropped fields and priority mismatches |
+| Use trace analysis to identify the actual failure mode | [`tracer.py`](tracer.py) instruments every tool call, detects dropped/ignored fields and priority mismatches |
 | Correctly separate integration-layer bugs from model-output problems | [`diagnosis/trace_analysis.md`](diagnosis/trace_analysis.md) — trace evidence pinpoints the exact layer for each bug |
 
 ### Build Steps
@@ -156,24 +158,13 @@ See [`diagnosis/trace_analysis.md`](diagnosis/trace_analysis.md):
 
 | Question | Answer |
 |----------|--------|
-| Did your initial hypothesis for each bug turn out to be right, or did the trace reveal something different? | **Both hypotheses were confirmed.** Hypothesis 1 (field dropped between classification and routing) was confirmed by the trace showing `is_ambiguous=True` in classify output but `False` in routing — the `execute_route_ticket` function hardcoded it. Hypothesis 2 (vague prompt → downgraded priorities) was confirmed by the trace showing systematic `high/urgent → medium` downgrades across 10 tickets. See [`diagnosis/trace_analysis.md`](diagnosis/trace_analysis.md). |
-| Could you explain, to someone who didn't see the bugs, which layer each one lived in and how you knew? | **Bug 1** lived in the **integration layer** (data passing between tools) — the classify tool correctly set `is_ambiguous=True`, but the route tool's code ignored the value and hardcoded `False`. The trace proved this by showing the correct value entering the function but the wrong value being used internally. **Bug 2** lived in the **model output layer** (prompt quality) — the system prompt said "determine how important it seems" instead of providing explicit URGENT/HIGH/MEDIUM/LOW criteria. The trace proved this by showing every priority defaulting to `medium` regardless of ticket severity. |
+| Did your initial hypothesis for each bug turn out to be right, or did the trace reveal something different? | **Both were right about the layer; hypothesis 1 was wrong about the mechanism.** Hypothesis 1 guessed the field was dropped in the data passing (option a) or ignored by the router (option b). The trace shows the runner passes `is_ambiguous=True` into `route_ticket`, so it was option b: `execute_route_ticket` ignores it. Hypothesis 2 (vague prompt → downgraded priorities) was confirmed: 10 tickets differ from ground truth with the vague prompt and 0 with the rubric. See [`diagnosis/trace_analysis.md`](diagnosis/trace_analysis.md). |
+| Could you explain, to someone who didn't see the bugs, which layer each one lived in and how you knew? | **Bug 1** lived in the **integration layer** — the classifier correctly set `is_ambiguous=True` and the runner passed it to the route tool, but the route tool's code ignored it and used `False`. The trace shows the correct input and an `escalate=False` output, and `tools.py` shows why. **Bug 2** lived in the **model output layer** (prompt quality) — the system prompt asked the model to judge importance instead of giving URGENT/HIGH/MEDIUM/LOW criteria. The trace shows billing, technical and account tickets all rated `medium` while the code passed the values through unchanged. |
 
 ## Mock vs. Live Mode
 
-All scripts run in mock mode by default (no API key needed). The mock classifiers simulate what the model would produce:
-- **Broken mock**: Simulates the effect of the vague prompt (downgraded priorities)
-- **Fixed mock**: Simulates the effect of the explicit rubric (correct priorities)
+This module runs in **mock mode only**; there is no live-API path.
 
-Both modes demonstrate the same diagnostic principles — the bugs and fixes work identically regardless of whether the actual API is called.
-
-To run in **live mode**:
-
-1. Set a valid `ANTHROPIC_API_KEY` in the `.env` file at the project root
-2. Run any script normally — live mode is auto-detected when the API key is present:
-
-```bash
-uv run python .\4_eval_testing_and_debugging\run_comparison.py
-```
-
-If the API key is missing or invalid, the scripts fall back to mock mode automatically with a warning.
+- `mock_model.py` simulates the model. It reads the agent's system prompt: if the prompt contains the `Priority Rubric` section it assigns priorities from the rubric, otherwise it rates anything that is not clearly a feature request as `medium`. The classification logic and tool code are otherwise identical in both apps.
+- Because the behaviour is driven by the prompt text, the prompt edit is the only difference that changes the outcome, which is what the exercise needs to show.
+- The simulation encodes the *expected* effect of a vague prompt. Whether a real Claude model shows the same drift has to be checked against the live API, which this module does not call.

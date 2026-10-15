@@ -6,8 +6,8 @@ CLAUDE.md hierarchy is correct, custom commands are discoverable,
 and optionally runs a headless mode test.
 
 Usage:
-    uv run python -m claude_code.validate_setup
-    uv run python -m claude_code.validate_setup --headless
+    uv run python 3_claude_code/validate_setup.py
+    uv run python 3_claude_code/validate_setup.py --headless
 """
 
 from __future__ import annotations
@@ -139,26 +139,23 @@ def check_custom_commands(commands_dir: Path) -> bool:
         name = cmd_file.stem
         console.print(
             f"  [green][OK][/green] Custom command: "
-            f"/project:{name} <- [dim]{cmd_file.relative_to(BASE_DIR)}[/dim]"
+            f"/{name} <- [dim]{cmd_file.relative_to(BASE_DIR)}[/dim]"
         )
     return True
 
 
 def check_env_api_key() -> bool:
-    """Check that .env exists and ANTHROPIC_API_KEY is configured."""
-    repo_root = BASE_DIR.parent
-    env_file = repo_root / ".env"
-    if not env_file.exists():
-        console.print("  [yellow][!][/yellow] .env file not found at repository root")
-        return False
-
+    """Report whether live mode is available. A missing key is not a failure: mock mode is the default."""
     api_key = os.getenv("ANTHROPIC_API_KEY", "")
     if not api_key or api_key.startswith("sk-ant-your"):
-        console.print("  [yellow][!][/yellow] .env found, but ANTHROPIC_API_KEY is placeholder or not set")
-        return False
+        console.print(
+            "  [cyan][i][/cyan] ANTHROPIC_API_KEY not set: all modules run in mock mode "
+            "(copy .env.example to .env to enable live mode)"
+        )
+        return True
 
     masked = f"{api_key[:8]}...{api_key[-4:]}" if len(api_key) > 12 else "***"
-    console.print(f"  [green][OK][/green] ANTHROPIC_API_KEY loaded from .env: [dim]{masked}[/dim]")
+    console.print(f"  [green][OK][/green] ANTHROPIC_API_KEY loaded: live mode enabled [dim]{masked}[/dim]")
     return True
 
 

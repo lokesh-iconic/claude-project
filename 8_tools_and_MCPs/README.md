@@ -83,7 +83,7 @@ The tool definitions include:
 | [`SKILL.md`](skill/SKILL.md) | Proper YAML frontmatter (`name`, `description`), usage instructions, output format docs |
 | [`scripts/inventory_skill.py`](skill/scripts/inventory_skill.py) | Standalone CLI: `python inventory_skill.py lookup SKU-001` → JSON to stdout |
 
-The skill is invoked via `subprocess`, producing structured JSON:
+The test runner invokes the script via `subprocess` (Claude Code would discover and run it through `SKILL.md`), producing structured JSON:
 ```bash
 python inventory_skill.py lookup SKU-001   # → {"product": {...}}
 python inventory_skill.py search "desk"    # → {"products": [...], "count": 2}
@@ -149,7 +149,7 @@ All three implementations produce identical results for the same 5 queries:
 | Prompt templates | — | — | ✓ |
 | Cross-application reuse | — | ✓ | ✓ |
 | No code copying needed | — | ✓ | ✓ |
-| Works without SDK dependency | ✓ | ✓ | — |
+| Works without the MCP SDK | ✓ | ✓ | — |
 | Process isolation | — | ✓ | ✓ |
 | Language-agnostic interface | — | — | ✓ |
 | Discoverable (list_tools) | — | — | ✓ |
@@ -162,7 +162,7 @@ Full tradeoff analysis: [`comparison.md`](comparison.md)
 |----------|--------|
 | If another team wanted to reuse this capability in a different application, which of your three implementations could they actually reuse without copying code? | **MCP Server** — any MCP-compatible client connects to it without copying code or adding Python to their stack. **Skill** — reusable within Claude Code by referencing the SKILL.md path. **Custom Tool** — requires copying Python files into the new application. |
 | Does your MCP server's error handling follow the same structured-error pattern (category, retryable, description) as a well-designed custom tool? | **Yes** — all three implementations share `error_model.py`. The MCP server returns `{"error": {"category": "not_found", "retryable": false, "description": "..."}}` — identical to the custom tool and skill. |
-| Could you defend your final choice to a technical reviewer in two sentences? | **For a single-team internal lookup, use a Custom Tool** — it's the fastest to build, has no extra dependencies, and the structured error handling is identical. **Switch to MCP only when a second team, a non-Python client, or a different application needs access** — that's when the server's process isolation and protocol standardization justify the setup cost. |
+| Could you defend your final choice to a technical reviewer in two sentences? | **For a single-team internal lookup, use a Custom Tool** — it's the fastest to build, has no extra dependencies, and the structured error handling is identical. **Switch to MCP when a second team, a non-Python client, or a different application needs access, or when the data is shared reference material rather than tightly coupled to one agent** — that's when the server's process isolation and protocol standardization justify the setup cost. (The capstone applies this rule: order lookup is a custom tool, the shared knowledge base is an MCP server.) |
 
 ## Mock vs. Live Mode
 

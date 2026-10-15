@@ -65,7 +65,7 @@ uv run python .\5_model_selection_and_optimization\task_c_summarization\run.py
 | **Comparison** | Claude Sonnet 4.6 ($3.00/$15.00 per MTok) |
 | **Accuracy Bar** | ≥85% (defined upfront before running tests) |
 | **Key Metric** | Accuracy + throughput (items/second) |
-| **Verdict** | Haiku meets the accuracy bar — Sonnet costs more for no gain |
+| **Verdict (mock)** | Both models use the same keyword classifier, so accuracy is equal by construction; Haiku clears the bar and costs less. Confirming that Sonnet adds nothing needs a live run on real data |
 
 ### Task B: Complex Reasoning (Extended Thinking)
 
@@ -75,7 +75,7 @@ uv run python .\5_model_selection_and_optimization\task_c_summarization\run.py
 | **Fast Mode** | Claude Sonnet 4.6 with `max_tokens=4096`, no thinking |
 | **Extended** | Claude Sonnet 4.6 with `thinking: {budget_tokens: 10000}` |
 | **Key Metric** | Quality score (0-10 rubric per problem) vs. cost/latency |
-| **Verdict** | Extended thinking scores higher — worth the cost for complex reasoning |
+| **Verdict (mock)** | Simulated rubric scores favour extended thinking at higher cost; treat them as illustrating the trade-off, not as measured quality |
 
 ### Task C: Long-Document Summarization (Prompt Caching)
 
@@ -85,7 +85,7 @@ uv run python .\5_model_selection_and_optimization\task_c_summarization\run.py
 | **Model** | Claude Sonnet 4.6 with `cache_control: {"type": "ephemeral"}` |
 | **Baseline** | Same calls without caching |
 | **Key Metric** | Cost per call (first vs. subsequent), total savings |
-| **Verdict** | Caching reduces repeat-query costs by ~60-80% |
+| **Verdict (mock)** | At real prices and simulated token counts, cache reads cost ~10% of full input, so repeat queries against the same document are much cheaper |
 
 ## Cost Tracking
 
@@ -93,11 +93,11 @@ Every API call (mock or live) is tracked by `tracker.py`:
 
 | Metric | How It's Measured |
 |--------|-------------------|
-| **Input tokens** | From API response `usage.input_tokens` |
+| **Input tokens** | From API response `usage.input_tokens` (live helpers) or simulated from text length (mock) |
 | **Output tokens** | From API response `usage.output_tokens` |
 | **Cache write tokens** | From `usage.cache_creation_input_tokens` |
 | **Cache read tokens** | From `usage.cache_read_input_tokens` |
-| **Thinking tokens** | From `usage.thinking_tokens` (extended thinking) |
+| **Thinking tokens** | From `usage.thinking_tokens` when the API reports it, otherwise estimated from the thinking text (live helper); simulated in mock mode |
 | **Latency** | Wall-clock time via `time.perf_counter()` |
 | **Cost** | Calculated from real Anthropic pricing (in `models.py`) |
 
@@ -126,16 +126,16 @@ Every API call (mock or live) is tracked by `tracker.py`:
 
 | Question | Answer | Evidence |
 |----------|--------|----------|
-| Would switching Task A to the most capable model improve outcomes? | **No** — tested, not assumed. Sonnet produces the same accuracy as Haiku on simple classification. | Task A runner compares both models against the same 50-email dataset |
-| Does caching on Task C show real, measured cost reduction? | **Yes** — cache reads are ~10x cheaper than full input tokens. | Task C runner measures cached vs uncached costs per document |
-| If a model release changed behavior on Task B, would you notice? | **Yes** — the 10-point rubric across 5 problems is granular enough to detect a 2-point regression. | Each rubric criterion is independently scored |
+| Would switching Task A to the most capable model improve outcomes? | **Not shown by the mock** — it gives both models identical accuracy by design, so the benchmark demonstrates the comparison harness and the 85% bar, not a real model difference. Run the live helpers in `task_a_classification/classifier.py` on your own labelled emails to decide. | Task A runner compares both models against the same 50-email dataset |
+| Does caching on Task C show real, measured cost reduction? | **Computed, not measured** — cache reads are priced at ~10% of full input tokens, and the runner compares cached vs uncached cost per document using simulated token counts. A live run reports real `cache_creation_input_tokens` / `cache_read_input_tokens`. | Task C runner compares cached vs uncached costs per document |
+| If a model release changed behavior on Task B, would you notice? | **Only with live scoring** — the 10-point rubric across 5 problems is granular enough to catch a 2-point regression, but the mock scores are simulated. | Each rubric criterion is independently scored |
 
 ## Mock vs. Live Mode
 
-All scripts run in mock mode by default (no API key needed):
+The runners (`run_all.py` and each `task_*/run.py`) always execute in **mock mode**; no API key is needed and none is used:
 - **Mock responses** use keyword matching and templates
-- **Token counts** simulate realistic values based on text length
-- **Cost calculations** use real Anthropic pricing — identical in mock and live
-- The mock classifier intentionally produces the same accuracy for Haiku and Sonnet (the key insight: simple classification doesn't benefit from more capable models)
+- **Token counts** are simulated from text length
+- **Cost calculations** use real Anthropic pricing, so the formulas are the same ones a live run would use
+- The mock classifier gives Haiku and Sonnet the same accuracy by design; the benchmark shows how to compare them, not which is better
 
-This module is designed to run in **mock mode only**. The core deliverable is the cost/latency analysis framework and model selection rationale — not the API calls themselves. Mock responses use realistic token counts and real Anthropic pricing, so cost calculations are representative of live usage.
+The classifier, reasoner and summarizer modules also contain live helper functions (`classify_email_live`, `solve_extended_thinking_live`, `summarize_live_cached`, ...) that take an Anthropic client. Pass a client to those functions from your own script to measure real accuracy, latency and cache tokens; the bundled runners do not do this.

@@ -8,11 +8,21 @@ Each bug includes:
   4. Trace analysis showing how to isolate it
   5. The fix
 
-Bug 1 (Integration-layer): Model router fallback
-Bug 2 (Model-output): Uppercase priority validation
+Bug 1 (Integration-layer): an env var overrides the router's per-task model choice
+Bug 2 (Model-output): uppercase priority values from the model are not normalized
+
+State of the repo:
+  - Bug 1 is fixed. Reintroducing it makes EVAL-001 fail and makes verify_bug_1_is_fixed() fail.
+  - Bug 2 is deliberately left in place. verify_bug_2_is_fixed() detects it, and the runner
+    reports it as DETECTED (expected) without failing the run.
 """
 
 from __future__ import annotations
+
+import os
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 
 # ──────────────────────────────────────────────────────────────────────
@@ -22,7 +32,7 @@ from __future__ import annotations
 BUG_1_DESCRIPTION = """
 BUG 1: Model Router Ignores Task-Based Routing When CLAUDE_MODEL Is Set
 
-FILE: capstone/models/router.py → ModelRouter.get_model_name()
+FILE: capstone/agent/orchestrator.py → process_message()
 
 SYMPTOM:
   When the environment variable CLAUDE_MODEL is set (e.g., to "claude-sonnet-4-6"),
@@ -37,7 +47,7 @@ REPRODUCTION:
 TRACE ANALYSIS:
   The bug is in how the orchestrator constructs the model name:
   
-  orchestrator.py line ~180:
+  orchestrator.py process_message():
     model_name = os.getenv("CLAUDE_MODEL", model_config.model_id.value)
     # BUG: If CLAUDE_MODEL is set, it OVERRIDES the router's per-task selection
     # FIX: Remove the os.getenv fallback — trust the router's task-based selection
@@ -47,7 +57,7 @@ TRACE ANALYSIS:
     # The router already made the deliberate per-task choice
 
 IMPACT:
-  - 3.75x cost increase on simple lookups ($0.80 → $3.00 per MTok input)
+  - 3x cost increase on simple lookups ($1.00 → $3.00 per MTok input)
   - Negates the entire model strategy from Domain 5
   - Violates the "choose models deliberately per task" requirement
 """
@@ -71,9 +81,8 @@ FILE: capstone/agent/tools.py → execute_escalate_to_human()
 
 SYMPTOM:
   When the model returns priority as "URGENT" (uppercase) instead of "urgent"
-  (lowercase), the escalation ticket's priority field passes through unchecked.
-  But when the eval suite validates the ticket, Pydantic validation fails because
-  the enum expects lowercase values.
+  (lowercase), the escalation ticket's priority field passes through unchecked, and
+  the "urgent" response-time branch ("2-4 hours") is not taken.
 
   In live mode, Claude sometimes returns "HIGH" or "URGENT" in uppercase.
   The mock mode always uses lowercase, so this bug only surfaces with the
@@ -96,9 +105,9 @@ TRACE ANALYSIS:
     "priority": args.get("priority", "medium").lower(),
 
 IMPACT:
-  - Downstream systems consuming escalation tickets may reject them
-  - Eval suite's _assert_response_contains("urgent") may fail
-  - Only surfaces in live mode when model outputs uppercase
+  - Urgent tickets get the standard 24-hour estimate instead of 2-4 hours
+  - Downstream systems that compare against lowercase values misread the ticket
+  - Only surfaces in live mode when the model outputs uppercase
 """
 
 BUG_2_FIX = {
@@ -114,52 +123,89 @@ BUG_2_FIX = {
 # ──────────────────────────────────────────────────────────────────────
 
 def verify_bug_1_is_fixed() -> tuple[bool, str]:
-    """Verify that Bug 1 has been fixed by checking the router respects task config."""
-    from capstone.models.router import ModelRouter, TaskType
+    """Send a simple lookup through the real orchestrator with CLAUDE_MODEL set.
 
-    router = ModelRouter()
-    # Simple lookup should always be Haiku, regardless of env vars
-    config = router.get_config(TaskType.SIMPLE_LOOKUP)
-    if "haiku" in config.model_id.value.lower():
-        return True, "✓ Bug 1 fixed: Simple lookups correctly route to Haiku"
-    return False, "✗ Bug 1 NOT fixed: Simple lookups still routing to wrong model"
+    The seeded bug lives in the orchestrator, so the check has to go through it:
+    with the override in place the lookup is served by Sonnet instead of Haiku.
+    """
+    from capstone.agent.orchestrator import SupportSession, process_message
+
+    previous = os.environ.get("CLAUDE_MODEL")
+    os.environ["CLAUDE_MODEL"] = "claude-sonnet-4-6"
+    try:
+        result = process_message(SupportSession(session_id="bug-1-check"), "What's the status of order ORD-1001?")
+    finally:
+        if previous is None:
+            os.environ.pop("CLAUDE_MODEL", None)
+        else:
+            os.environ["CLAUDE_MODEL"] = previous
+
+    model = result.get("model_used", "")
+    if "haiku" in model.lower():
+        return True, f"Bug 1 fixed: simple lookup routed to {model} even with CLAUDE_MODEL set"
+    return False, f"Bug 1 present: simple lookup used {model}, expected Haiku"
 
 
 def verify_bug_2_is_fixed() -> tuple[bool, str]:
-    """Verify that Bug 2 has been fixed by checking priority normalization."""
+    """Check that an uppercase priority from the model is normalized."""
     from capstone.agent.tools import execute_escalate_to_human
 
     result = execute_escalate_to_human({
         "reason": "Test",
-        "priority": "URGENT",  # Uppercase — simulates model output
+        "priority": "URGENT",  # Uppercase, simulates model output
         "customer_summary": "Test case",
     })
 
     ticket = result.get("escalation_ticket", {})
     priority = ticket.get("priority", "")
     if priority == "urgent":
-        return True, "✓ Bug 2 fixed: Uppercase 'URGENT' correctly normalized to 'urgent'"
-    return False, f"✗ Bug 2 NOT fixed: Priority is '{priority}', expected 'urgent'"
+        return True, "Bug 2 fixed: uppercase 'URGENT' normalized to 'urgent'"
+    return False, f"Bug 2 present: priority is '{priority}', expected 'urgent'"
 
 
-def run_bug_verification():
-    """Run both bug verifications and print results."""
-    print("\n" + "=" * 60)
+# Bugs that are intentionally left in the code base. A failing check for these is expected.
+EXPECTED_UNFIXED = {"Bug 2 (Priority Case)"}
+
+
+def run_bug_verification() -> bool:
+    """Run both verifications and print results.
+
+    Returns True when the outcome is as intended: Bug 1 fixed, Bug 2 detected.
+    """
+    print()
+    print("=" * 60)
     print("  SEEDED BUG VERIFICATION")
-    print("=" * 60 + "\n")
+    print("=" * 60)
+    print()
 
+    as_intended = True
     for name, verifier in [("Bug 1 (Router Fallback)", verify_bug_1_is_fixed),
-                            ("Bug 2 (Priority Case)", verify_bug_2_is_fixed)]:
+                           ("Bug 2 (Priority Case)", verify_bug_2_is_fixed)]:
+        expected_unfixed = name in EXPECTED_UNFIXED
         try:
             passed, detail = verifier()
-            status = "PASS" if passed else "FAIL"
-            print(f"  [{status}] {name}")
-            print(f"    {detail}")
         except Exception as e:
             print(f"  [ERROR] {name}")
             print(f"    Exception: {e}")
+            print()
+            as_intended = False
+            continue
+
+        if passed:
+            status = "FIXED"
+        elif expected_unfixed:
+            status = "DETECTED (expected)"
+        else:
+            status = "FAIL"
+            as_intended = False
+        print(f"  [{status}] {name}")
+        print(f"    {detail}")
         print()
+
+    return as_intended
 
 
 if __name__ == "__main__":
-    run_bug_verification()
+    if sys.platform == "win32" and hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+    sys.exit(0 if run_bug_verification() else 1)

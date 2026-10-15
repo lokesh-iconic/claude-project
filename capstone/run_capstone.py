@@ -12,6 +12,10 @@ from __future__ import annotations
 import json
 import os
 import sys
+
+if sys.platform == "win32" and hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
 import time
 
 # Ensure project root is importable

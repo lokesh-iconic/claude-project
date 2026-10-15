@@ -49,7 +49,7 @@ Three stages applied automatically as conversation grows:
 | Stage | Turns | Strategy | Token Impact |
 |-------|-------|----------|-------------|
 | Full history | 1-8 | Keep everything | Baseline |
-| Prune tool outputs | 9-15 | Replace verbose results with summaries | Reduces tool bloat |
+| Prune tool outputs | 9-15 | Replace verbose results with summaries | Reduces tool bloat (no effect when outputs are already short) |
 | Compact old turns | 16+ | Summarize oldest turns into a single block | Caps context growth |
 
 ### 3. Subagent Isolation ([`subagent.py`](subagent.py))
@@ -71,6 +71,8 @@ The parser handles four input categories:
 
 ## Results
 
+The figures below come from the mock-mode run of `run_session.py` and `run_parser_test.py` (token counts are estimated from word counts, and the mock assistant always answers in the required JSON format). Re-run the scripts to regenerate them; use `--live` to measure a real model.
+
 ### Session Drift Test (25 turns)
 
 | Phase | Turns | Compliance |
@@ -86,8 +88,9 @@ The parser handles four input categories:
 | Turns with compaction | 10 of 25 |
 | Context at turn 8 (pre-compaction) | ~1,664 tokens |
 | Context at turn 25 (with compaction) | ~1,850 tokens |
-| Projected without compaction | ~5,200 tokens |
-| Savings | ~64% reduction |
+| Projected without compaction | ~5,200 tokens (linear extrapolation of the turn-8 context to 25 turns) |
+| Estimated saving | ~64% versus that projection |
+| Tokens removed by tool-output pruning | 0 in this session (mock tool outputs are already short); compaction accounts for the reduction |
 
 ### Parser Stress Test
 
@@ -124,7 +127,7 @@ The parser handles four input categories:
 |----------|--------|
 | After 20+ turns, is the system prompt's core instruction still being followed as reliably as turn 1? | **Yes** — 100% format compliance at turns 21-25, identical to turns 1-5. Context compaction prevents instruction dilution. |
 | If you fed your structured-output parser a malformed response on purpose, does it fail safely? | **Yes** — 10/10 test cases pass. Parser handles empty strings, HTML, truncated JSON, wrong types, and plain text without crashing. Every error is flagged, never silent. |
-| Did your pruning/compaction step actually reduce token usage in later turns — check, don't assume? | **Yes** — measured. Context at turn 25 is ~1,850 tokens vs. projected ~5,200 without compaction (~64% reduction). Compaction activates at turn 16 and caps further growth. |
+| Did your pruning/compaction step actually reduce token usage in later turns — check, don't assume? | **Yes (mock run)** — context at turn 25 is ~1,850 tokens vs. ~5,200 projected by extrapolating the turn-8 context; the context dropped from 2,683 tokens at turn 15 to 1,385 at turn 16 when compaction started, and stayed below 2,000 afterwards. The projection is an estimate, not a second run without compaction. |
 
 ## Mock vs. Live Mode
 

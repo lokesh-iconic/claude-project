@@ -14,6 +14,7 @@ A good system prompt doesn't protect you from prompt injection. When untrusted c
 ├── __init__.py
 ├── payloads.py                        ← 10 prompt-injection attack payloads
 ├── secrets_audit.py                   ← Scans source for hardcoded secrets
+├── layer_checks.py                    ← Exercises each defense layer with its own input
 │
 ├── vulnerable_app/
 │   ├── __init__.py
@@ -30,7 +31,7 @@ A good system prompt doesn't protect you from prompt injection. When untrusted c
 │
 ├── run_vulnerable.py                  ← Run 10 attacks against vulnerable app (all succeed)
 ├── run_hardened.py                    ← Run 10 attacks against hardened app (all blocked)
-├── run_comparison.py                  ← Side-by-side comparison + secrets audit
+├── run_comparison.py                  ← Side-by-side comparison + per-layer checks + secrets audit
 └── output/
     └── security_report.md             ← Generated attack results report
 ```
@@ -147,11 +148,22 @@ Scans both apps' source code for:
 | Blocked by hooks | 0 | 10 |
 | Exploitation rate | 100% | 0% |
 
+All 10 hardened-app results are stopped by the pre-process hook. The patterns in that hook were written for these payloads, so this table shows the hook covers the known attacks; it does not show that unknown phrasings are caught. The per-layer checks below test the other layers directly.
+
+### Per-Layer Checks (`layer_checks.py`)
+
+| Layer | Input used | Expected result |
+|-------|-----------|-----------------|
+| 1 Pre-process hook | A paraphrased injection with none of the hook's trigger phrases | Passes the hook (documents its coverage limit) |
+| 2 Input isolation | The same paraphrase | Wrapped in `<user_content>`; system prompt declares it DATA |
+| 3 Content policy | Four simulated compromised outputs (credential leak, prompt leak, unauthorized action, role hijack) | All blocked |
+| 4 Identity / access | `delete_user_data` with no token, an analyst token, and an admin token | Blocked, blocked, allowed; 3 audit entries; no token text logged |
+
 ### Secrets Audit
 
 | Metric | Vulnerable | Hardened |
 |--------|-----------|---------|
-| Hardcoded secrets found | 3 | 0 |
+| Hardcoded secrets found | 2 | 0 |
 | Proper secret management practices | 3 | 9 |
 
 ### Guardrail Enforcement Type
@@ -163,7 +175,7 @@ Scans both apps' source code for:
 | Input isolation (delimiters) | Prompt engineering | Probabilistic (backup) |
 | Role separation (system prompt) | Prompt engineering | Probabilistic (backup) |
 
-Primary defense is deterministic. Prompt-based defenses are a secondary layer. A single point of failure doesn't compromise the system.
+Code-enforced layers do not depend on the model's behaviour; prompt-based layers do, so they are a backup. The regex pre-process hook only recognises known phrasings, so the controls that limit the damage from an unknown phrasing are the output content policy and the identity/permission checks on consequential actions.
 
 ## Assignment Requirements Mapping
 
@@ -183,7 +195,7 @@ Primary defense is deterministic. Prompt-based defenses are a secondary layer. A
 | 1 | Craft injection payloads and confirm the build is vulnerable | [`payloads.py`](payloads.py) — 10 payloads; [`run_vulnerable.py`](run_vulnerable.py) — all 10 succeed (100% exploitation) |
 | 2 | Fix by treating retrieved content as untrusted input, add a hook | [`hardened_app/summarizer.py`](hardened_app/summarizer.py) — input isolation; [`hardened_app/hooks.py`](hardened_app/hooks.py) — pre-process injection detection hook |
 | 3 | Add a second, unrelated guardrail layer | [`hardened_app/content_policy.py`](hardened_app/content_policy.py) — independent post-process content policy checker |
-| 4 | Audit secrets and move to proper management | [`secrets_audit.py`](secrets_audit.py) — finds 3 hardcoded secrets in vulnerable; [`hardened_app/actions.py`](hardened_app/actions.py) — loads from env, masks in output |
+| 4 | Audit secrets and move to proper management | [`secrets_audit.py`](secrets_audit.py) — finds 2 hardcoded secrets in vulnerable; [`hardened_app/actions.py`](hardened_app/actions.py) — loads from env, masks in output |
 | 5 | Add identity/access validation for consequential actions | [`hardened_app/actions.py`](hardened_app/actions.py) — token validation, per-action permissions, audit trail |
 
 ### Self-Check
@@ -191,8 +203,8 @@ Primary defense is deterministic. Prompt-based defenses are a secondary layer. A
 | Question | Answer |
 |----------|--------|
 | Does your original injection payload still work after your fix — actually re-run the attack, don't just assume the fix worked? | **Yes, re-ran all 10.** `run_comparison.py` runs the exact same payloads against both versions. Vulnerable: 10/10 exploited. Hardened: 0/10 exploited. Every attack is verified by re-execution. |
-| If someone read your logs, would any API key or secret be visible in plaintext? | **Vulnerable: YES** — 3 hardcoded secrets found by `secrets_audit.py`. **Hardened: NO** — keys loaded from `os.environ`, masked in output (`sk-ant-a...NAAA`), audit log records `token_provided: True/False` but never the token itself. |
-| Is your guardrail enforcement happening in code (deterministic), or only in the prompt (probabilistic) — and does that match how much the failure mode actually matters? | **Primary defense is deterministic** (regex hooks in code). Prompt-based isolation is a secondary backup. This matches the failure severity — an injection succeeding could leak secrets or trigger destructive actions, so the defense must be code-enforced, not just "please don't follow injected instructions". |
+| If someone read your logs, would any API key or secret be visible in plaintext? | **Vulnerable: YES** — 2 hardcoded secrets found by `secrets_audit.py`. **Hardened: NO** — keys loaded from `os.environ`, masked in output (`sk-ant-a...NAAA`), audit log records `token_provided: True/False` but never the token itself. |
+| Is your guardrail enforcement happening in code (deterministic), or only in the prompt (probabilistic) — and does that match how much the failure mode actually matters? | **The layers that bound the damage are in code**: the output content policy and the identity/permission checks on actions. The regex pre-process hook is also code, but it only matches known phrasings (the per-layer checks show a paraphrase gets through it). Prompt-based isolation is a backup. This matches the failure severity — an injection succeeding could leak secrets or trigger destructive actions, so those outcomes are blocked in code rather than by asking the model to behave. |
 
 ## Mock vs. Live Mode
 

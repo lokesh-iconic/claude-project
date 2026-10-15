@@ -1,5 +1,8 @@
 """
-fixed_app/hooks.py — PostToolUse hook (identical to broken_app, no changes needed).
+fixed_app/hooks.py — PostToolUse hook that enforces formatting on draft responses.
+
+This is an UNMODIFIED copy of the working hooks.py from Domain 1.
+The hooks are NOT where either bug was introduced.
 """
 
 from __future__ import annotations
@@ -13,6 +16,11 @@ from shared import DraftResponse, enforce_formatting
 
 
 class DraftFormattingHook:
+    """
+    A PostToolUse hook that intercepts draft_response results and enforces
+    formatting rules deterministically.
+    """
+
     def __init__(self):
         self.invocation_count = 0
         self.corrections_made = []
@@ -20,7 +28,9 @@ class DraftFormattingHook:
     def __call__(self, tool_name: str, tool_input: dict, tool_result: dict) -> dict:
         if tool_name != "draft_response":
             return tool_result
+
         self.invocation_count += 1
+
         try:
             raw_draft = DraftResponse(**tool_result)
         except Exception:
@@ -39,6 +49,7 @@ class DraftFormattingHook:
                 "ticket_id": tool_input.get("ticket_id", "unknown"),
                 "changes": _diff_summary(original_body, formatted_draft.body),
             })
+
         return formatted_draft.model_dump()
 
     def get_stats(self) -> dict:
@@ -63,4 +74,6 @@ def _diff_summary(original: str, formatted: str) -> list[str]:
 
 
 def create_hooks() -> dict[str, DraftFormattingHook]:
-    return {"PostToolUse": DraftFormattingHook()}
+    return {
+        "PostToolUse": DraftFormattingHook(),
+    }

@@ -58,6 +58,7 @@ def main():
     lines.append(f"  {'Priority mismatches':<30} {bs['priority_mismatches']:>12} {fs['priority_mismatches']:>12} {fs['priority_mismatches'] - bs['priority_mismatches']:>+12}")
     lines.append(f"  {'Escalation failures':<30} {bs['escalation_failures']:>12} {fs['escalation_failures']:>12} {fs['escalation_failures'] - bs['escalation_failures']:>+12}")
     lines.append(f"  {'Dropped fields':<30} {bs['dropped_fields']:>12} {fs['dropped_fields']:>12} {fs['dropped_fields'] - bs['dropped_fields']:>+12}")
+    lines.append(f"  {'Ignored fields':<30} {bs['ignored_fields']:>12} {fs['ignored_fields']:>12} {fs['ignored_fields'] - bs['ignored_fields']:>+12}")
     lines.append("")
 
     # Per-ticket comparison (only tickets that differ)
@@ -111,8 +112,8 @@ def main():
     lines.append(f"    Problem:  is_ambiguous hardcoded to False in execute_route_ticket()")
     lines.append(f"    Layer:    Integration (data passing between tools)")
     lines.append(f"    Fix:      Code change — is_ambiguous = args.get('is_ambiguous', False)")
-    lines.append(f"    Impact:   {bs['dropped_fields']} → {fs['dropped_fields']} dropped fields")
-    lines.append(f"              {bs['escalation_failures']} → {fs['escalation_failures']} escalation failures\n")
+    lines.append(f"    Impact:   {bs['ignored_fields']} → {fs['ignored_fields']} ignored is_ambiguous signals at the router")
+    lines.append(f"              {bs['escalation_failures']} → {fs['escalation_failures']} escalation failures (shared with Bug 2: some unescalated tickets also had a too-low priority)\n")
 
     lines.append(f"  Bug 2 (Model Output):")
     lines.append(f"    Problem:  Vague system prompt without priority rubric")
