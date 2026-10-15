@@ -26,7 +26,19 @@ Most modules use the same running example (a customer-support assistant that tri
 tickets, looks up orders, and answers questions) so the techniques can be compared
 directly. Every module is designed to run without an API key in **mock mode**, which uses
 deterministic canned responses, and to switch to **live mode** automatically when
-`ANTHROPIC_API_KEY` is set. See each module's own README for details.
+`ANTHROPIC_API_KEY` is set (copy `.env.example` to `.env` and fill it in). See each
+module's own README for details, including which parts of a module have a live mode.
+
+## Intentionally Flawed Code
+
+Some parts of the repository are flawed on purpose because the exercise is to find, trace,
+or defend against the flaw:
+
+| Where | What is deliberate |
+|-------|--------------------|
+| `4_eval_testing_and_debugging/broken_app/` | An integration bug (`is_ambiguous` ignored when routing) and a vague system prompt without a priority rubric. `fixed_app/` differs from it only in those two places. |
+| `7_security_and_safety/vulnerable_app/` | Untrusted text pasted into the prompt, no-op hooks, two hardcoded fake secrets, and actions with no access control. |
+| `capstone/eval/seeded_bugs.py` | Bug 1 (model-routing override) is fixed and guarded by an eval; Bug 2 (uppercase priority not normalized) is left in the code so the verification can detect it. |
 
 ## What Is the Anthropic SDK, and Why Is It Used?
 
@@ -54,7 +66,7 @@ This project uses it because it provides, out of the box, the things every modul
 - **Streaming**: receiving a response token by token (used by the DocuQuery app in module 2).
 - **Tool use**: letting Claude request that your code run a function, which is the basis of
   the agents in modules 1, 4, 8 and the capstone.
-- **Prompt caching and extended thinking**: the cost and quality features measured in
+- **Prompt caching and extended thinking**: the cost and quality features used in
   modules 2 and 5.
 - **Authentication, automatic retries, and typed errors**: for example
   `anthropic.AuthenticationError` and `anthropic.NotFoundError`, which the modules use to
@@ -85,8 +97,8 @@ claude_project/
 ├── 8_tools_and_MCPs/                   ← Same capability three ways: custom tool, skill, MCP server
 ├── capstone/                            ← CAPSTONE: Production support assistant integrating all 8 domains
 ├── main.py                              ← Run all 8 modules sequentially
-├── .env                                 ← API key and model configuration
-├── .gitignore                           ← Clean ignore rules for git
+├── .env.example                         ← Template for .env (API key and optional model settings)
+├── .gitignore                           ← Ignore rules for git
 └── pyproject.toml                       ← Unified uv project dependencies
 ```
 
@@ -96,7 +108,10 @@ claude_project/
 # 1. Install all dependencies (using uv)
 uv sync
 
-# 2. Run ALL 8 modules sequentially
+# 2. (Optional) enable live mode: copy .env.example to .env and set ANTHROPIC_API_KEY
+copy .env.example .env        # PowerShell / cmd; use cp on macOS/Linux
+
+# 3. Run ALL 8 modules sequentially (mock mode needs no key)
 uv run python main.py
 
 # Or run individual modules:
@@ -104,7 +119,8 @@ uv run python main.py
 # Module 1 — Agents & Workflows comparison
 uv run python .\1_agents_and_workflows\run_comparison.py
 
-# Module 2 — DocuQuery FastAPI Server
+# Module 2 — DocuQuery FastAPI Server (validation runner, then the server)
+uv run python ._applications_and_integrationun_validation.py
 uv run python -m uvicorn app.main:app --app-dir 2_applications_and_integration
 # Swagger UI available at: http://localhost:8000/docs
 
@@ -147,13 +163,13 @@ uv run python capstone/run_capstone.py --server
 
 | Module | Title | What It Proves |
 |--------|-------|---------------|
-| **1** | Build a Ticket Triage System — Twice | Workflow vs. agent decision criteria, Claude Agent SDK, hooks, subagents, PydanticAI |
+| **1** | Build a Ticket Triage System — Twice | Workflow vs. agent decision criteria, a tool-calling agent loop, hooks, subagents, PydanticAI |
 | **2** | Build and Ship a Claude-Powered Document Q&A Application | Claude API mechanics (streaming, caching, batches), REST API design, session hygiene, config management |
-| **3** | Operate Claude Code Across a Real Repository | CLAUDE.md hierarchy, custom commands, headless mode, memory verification |
-| **4** | Diagnose and Fix a Deliberately Broken Claude Application | Error classification, trace analysis, separating integration bugs from model-output problems |
+| **3** | Operate Claude Code Across a Real Repository | CLAUDE.md hierarchy, custom commands, headless mode, memory verification (config files are templates to copy into the repo root) |
+| **4** | Diagnose and Fix a Deliberately Broken Claude Application | Error classification, trace analysis, separating integration bugs from model-output problems (mock mode simulates the model) |
 | **5** | Right-Size Model, Cost, and Latency Across Three Workloads | Model selection (Haiku vs Sonnet), extended thinking, prompt caching, token/cost tracking |
 | **6** | Engineer a Prompt and Context Pipeline That Survives a Long Session | Context compaction, instruction anchoring, subagent isolation, defensive structured output parsing |
-| **7** | Defend a Claude Application Against Prompt Injection | Layered defenses (code hooks, content policy, input isolation), secrets audit, identity validation |
+| **7** | Defend a Claude Application Against Prompt Injection | Layered defenses (code hooks, content policy, input isolation), per-layer checks, secrets audit, identity validation |
 | **8** | Build the Same Capability Three Ways — Tool, Skill, MCP | Custom tool vs. Skill vs. MCP server tradeoffs, structured errors, equivalence testing |
 | **Capstone** | Production Support Assistant | Integrates all 8 domains: agentic orchestrator, FastAPI app, CLAUDE.md, eval suite, model routing, context management, security guardrails, custom tools + MCP |
 
@@ -167,6 +183,6 @@ uv run python main.py
 uv run python capstone/run_capstone.py
 ```
 
-`main.py` executes every module sequentially, prints a pass/fail summary with per-module timing, and saves a markdown report to `output/run_report.md`.
+`main.py` executes every module sequentially, prints a pass/fail summary with per-module timing, saves a markdown report to `output/run_report.md`, and exits non-zero if any module fails. The capstone is run separately (see above).
 
 The capstone project (`capstone/`) integrates all 8 domains into a single production-grade support assistant. See [`capstone/README.md`](capstone/README.md) for full documentation.

@@ -1,23 +1,13 @@
 """
-broken_app/runner.py — Agent runner with a DELIBERATELY INTRODUCED model-output bug.
+broken_app/runner.py — Agent runner whose system prompt lacks a priority rubric.
 
-██████████████████████████████████████████████████████████████████████████████
-██  BUG 2 — MODEL-OUTPUT PROBLEM                                         ██
-██                                                                        ██
-██  The AGENT_SYSTEM_PROMPT has been modified to remove all guidance      ██
-██  about HOW to assign priority levels. The original prompt told the    ██
-██  model about priority levels explicitly. This broken version says     ██
-██  "determine how important it seems" — a vague instruction that        ██
-██  causes inconsistent priority assignments.                            ██
-██                                                                        ██
-██  This bug is in the MODEL-OUTPUT LAYER (prompt quality), not in the   ██
-██  code logic. The fix is a PROMPT change.                              ██
-██████████████████████████████████████████████████████████████████████████████
+Model-output problem: AGENT_SYSTEM_PROMPT tells the model to "determine how important
+each ticket seems" instead of giving explicit URGENT / HIGH / MEDIUM / LOW criteria.
+The code in this file is identical to fixed_app/runner.py; only the prompt differs.
 """
 
 from __future__ import annotations
 
-import json
 import os
 import sys
 from typing import Optional
@@ -33,35 +23,30 @@ from shared import (
     Category, Priority, Team,
 )
 from tickets import Ticket, TICKETS
-from broken_app.tools import TOOL_DEFINITIONS, TOOL_EXECUTORS, execute_classify_ticket, execute_route_ticket, execute_draft_response
+from mock_model import has_priority_rubric, rubric_priority, vague_prompt_classification
+from broken_app.tools import execute_classify_ticket, execute_route_ticket, execute_draft_response
 from broken_app.hooks import create_hooks, DraftFormattingHook
 from broken_app.subagent import run_specialist_classifier
 
 
-def _get_model() -> str:
-    return os.getenv("CLAUDE_MODEL", os.getenv("ANTHROPIC_MODEL", "claude-sonnet-4-6"))
-
-
 # ---------------------------------------------------------------------------
-# System Prompt — BROKEN VERSION (Bug 2)
-#
-# The original prompt had clear priority-level guidance. This version
-# removes that guidance, replacing it with vague language that causes
-# the model to assign priorities inconsistently.
+# System Prompt
 # ---------------------------------------------------------------------------
 
 AGENT_SYSTEM_PROMPT = """\
-You are a support ticket triage agent. You have tools to classify,
+You are an intelligent support ticket triage agent. You have tools to classify,
 route, and draft responses to customer support tickets.
 
 Your process:
-1. First, classify the ticket to understand what it's about
-2. If classification seems uncertain, use escalate_to_specialist
-3. Route the ticket to a team
-4. Draft a response
+1. First, classify the ticket to understand its category and priority
+2. If the classification confidence is LOW (< 0.7) or is_ambiguous is true,
+   use escalate_to_specialist for a deeper analysis
+3. Route the ticket to the appropriate team
+4. Draft a professional customer response
 
-Determine how important each ticket seems and categorize it appropriately.
-Use your best judgment for everything.
+Determine how important each ticket seems and use your best judgment.
+
+You MAY deviate from the classify→route→draft order if the situation warrants it.
 
 When you're done with ALL steps (classify, route, draft), provide a final
 summary as plain text. Include the classification, routing, and confirm the
@@ -78,24 +63,34 @@ class MockAgentLoop:
     """
     Simulates Claude's agentic behavior for mock mode.
 
-    In the broken version, the mock classifier uses a DEGRADED priority
-    heuristic that mirrors what the vague prompt would cause: inconsistent
-    priority assignments where urgent/high-priority tickets sometimes get
-    downgraded to "medium" because the prompt doesn't provide clear criteria.
+    Classification is produced by the simulated model in mock_model.py, which
+    reads `system_prompt` to decide how it assigns priorities.
     """
 
-    def __init__(self, hooks: dict):
+    def __init__(self, hooks: dict, system_prompt: str = AGENT_SYSTEM_PROMPT):
         self.hooks = hooks
+        self.system_prompt = system_prompt
         self.tool_calls_log: list[dict] = []
 
+    def _classify(self, classify_args: dict) -> dict:
+        if has_priority_rubric(self.system_prompt):
+            return execute_classify_ticket(classify_args)
+        return vague_prompt_classification(classify_args)
+
+    def _judge_priority(self, ticket: Ticket, classification: dict) -> dict:
+        """With an explicit rubric the simulated model applies it to the final classification."""
+        if has_priority_rubric(self.system_prompt):
+            return {**classification, "priority": rubric_priority(ticket.subject, ticket.body)}
+        return classification
+
     def process_ticket(self, ticket: Ticket) -> tuple[dict, dict, dict]:
-        # Step 1: Classify — BUT with degraded priority logic (Bug 2 effect)
+        # Step 1: Classify
         classify_args = {
             "ticket_id": ticket.id,
             "subject": ticket.subject,
             "body": ticket.body,
         }
-        classification = self._classify_with_vague_priority(classify_args)
+        classification = self._judge_priority(ticket, self._classify(classify_args))
         self.tool_calls_log.append({"tool": "classify_ticket", "args": classify_args, "result": classification})
 
         # Step 2: Check if ambiguous → escalate to specialist
@@ -107,7 +102,7 @@ class MockAgentLoop:
                 "initial_category": classification.get("category"),
                 "reason_for_escalation": f"Confidence {classification.get('confidence', 0):.2f}, ambiguous={classification.get('is_ambiguous')}",
             }
-            specialist_result = run_specialist_classifier(**specialist_args)
+            specialist_result = self._judge_priority(ticket, run_specialist_classifier(**specialist_args))
             self.tool_calls_log.append({"tool": "escalate_to_specialist", "args": specialist_args, "result": specialist_result})
             classification = specialist_result
 
@@ -140,115 +135,19 @@ class MockAgentLoop:
 
         return classification, routing, draft
 
-    def _classify_with_vague_priority(self, args: dict) -> dict:
-        """
-        ╔════════════════════════════════════════════════════════════════╗
-        ║  BUG 2 EFFECT: Without clear priority guidance in the        ║
-        ║  prompt, the model's priority assignments become             ║
-        ║  inconsistent. This mock simulates that by assigning         ║
-        ║  "medium" to tickets that SHOULD be "high" or "urgent".     ║
-        ║  Specifically:                                               ║
-        ║  - Double charges (billing) → medium instead of high         ║
-        ║  - Login failures → medium instead of urgent                 ║
-        ║  - App crashes → medium instead of high                      ║
-        ║  - Cancellation/refund → medium instead of high              ║
-        ╚════════════════════════════════════════════════════════════════╝
-        """
-        text = (args.get("subject", "") + " " + args.get("body", "")).lower()
-
-        if any(w in text for w in ["nothing works", "frustrated", "broken", "nobody", "fwd:", "re: re:"]):
-            return {"category": "general", "priority": "medium", "confidence": 0.45,
-                    "reasoning": "Seems like a general complaint", "is_ambiguous": True}
-        elif any(w in text for w in ["billing", "charged", "invoice", "refund", "promo", "payment"]):
-            # BUG 2: Should be "high" but vague prompt yields "medium"
-            return {"category": "billing", "priority": "medium", "confidence": 0.88,
-                    "reasoning": "Billing related concern", "is_ambiguous": False}
-        elif any(w in text for w in ["login", "api", "crash", "error", "timeout", "webhook", "firefox"]):
-            # BUG 2: Should be "high"/"urgent" but vague prompt yields "medium"
-            return {"category": "technical", "priority": "medium", "confidence": 0.90,
-                    "reasoning": "Technical issue", "is_ambiguous": False}
-        elif any(w in text for w in ["account", "delete", "gdpr", "upgrade", "transfer", "cancel"]):
-            return {"category": "account", "priority": "medium", "confidence": 0.85,
-                    "reasoning": "Account management request", "is_ambiguous": False}
-        elif any(w in text for w in ["feature", "dark mode", "mobile app", "export"]):
-            return {"category": "feature_request", "priority": "low", "confidence": 0.87,
-                    "reasoning": "Feature request or product suggestion", "is_ambiguous": False}
-        else:
-            return {"category": "general", "priority": "medium", "confidence": 0.50,
-                    "reasoning": "Could not clearly categorize", "is_ambiguous": True}
-
 
 # ---------------------------------------------------------------------------
 # Public Interface
 # ---------------------------------------------------------------------------
 
-_client_instance = None
-_client_checked = False
-
-
-def _get_client():
-    global _client_instance, _client_checked
-    if _client_checked:
-        return _client_instance
-
-    api_key = os.getenv("ANTHROPIC_API_KEY", "")
-    if not api_key or api_key.startswith("sk-ant-your"):
-        _client_checked = True
-        _client_instance = None
-        return None
-
-    try:
-        import anthropic
-        client = anthropic.Anthropic(api_key=api_key)
-        try:
-            client.models.list(limit=1)
-            client.messages.create(
-                model=_get_model(),
-                max_tokens=1,
-                messages=[{"role": "user", "content": "hi"}],
-            )
-            _client_instance = client
-        except anthropic.AuthenticationError as auth_err:
-            print(f"\n  [WARNING] ANTHROPIC_API_KEY from .env is invalid ({auth_err.message}).")
-            print("  [WARNING] Running in MOCK mode.\n")
-            _client_instance = None
-        except anthropic.BadRequestError as req_err:
-            if "credit balance is too low" in str(req_err).lower():
-                print("\n  [INFO] Credit balance is $0. Running in MOCK mode.\n")
-                _client_instance = None
-            else:
-                _client_instance = client
-        except anthropic.NotFoundError as nf_err:
-            print(f"\n  [WARNING] Model '{_get_model()}' was not found ({nf_err.message}). Running in MOCK mode.\n")
-            _client_instance = None
-        except Exception:
-            _client_instance = client
-    except Exception:
-        _client_instance = None
-
-    _client_checked = True
-    return _client_instance
-
-
-def process_ticket(ticket: Ticket, client=None, hooks: dict | None = None) -> TicketResult:
-    """Process a single ticket through the broken agent system."""
+def process_ticket(ticket: Ticket, hooks: dict | None = None) -> TicketResult:
+    """Process a single ticket through the agent system."""
     if hooks is None:
         hooks = create_hooks()
 
-    if client is not None:
-        try:
-            # Would use live API here — but bugs still apply via the broken prompt
-            mock_agent = MockAgentLoop(hooks)
-            classification, routing, draft = mock_agent.process_ticket(ticket)
-        except Exception as e:
-            print(f"    [Notice: Error ({e}) — using mock agent]")
-            mock_agent = MockAgentLoop(hooks)
-            classification, routing, draft = mock_agent.process_ticket(ticket)
-    else:
-        mock_agent = MockAgentLoop(hooks)
-        classification, routing, draft = mock_agent.process_ticket(ticket)
+    mock_agent = MockAgentLoop(hooks)
+    classification, routing, draft = mock_agent.process_ticket(ticket)
 
-    # Parse into Pydantic models
     try:
         cls_result = ClassificationResult(**classification)
     except Exception:
@@ -300,7 +199,7 @@ def run_all(tickets: Optional[list[Ticket]] = None) -> tuple[list[TicketResult],
 
     for ticket in tickets:
         print(f"  Processing {ticket.id}: {ticket.subject[:50]}...")
-        result = process_ticket(ticket, None, hooks)
+        result = process_ticket(ticket, hooks)
         results.append(result)
 
         flags = []

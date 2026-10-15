@@ -8,28 +8,28 @@ Traces captured by `tracer.py` after running `run_broken.py`.
 
 ### Trace Evidence
 
-For ticket TKT-016 ("Nothing works"), the trace shows:
+For ticket TKT-019 (Spanish, multi-intent), the broken system's trace shows:
 
 ```
 Step 1: classify_ticket
   → category=general, priority=medium, is_ambiguous=True, confidence=0.45
 
 Step 2: escalate_to_specialist
-  → category=general, priority=urgent, is_ambiguous=True
-    (Specialist correctly fires because confidence < 0.7)
+  → category=account, priority=medium, is_ambiguous=True, confidence=0.75
+    (Specialist fires because the first classification was ambiguous)
 
 Step 3: route_ticket
-  inputs: category=general, priority=urgent, is_ambiguous=True   ← PASSED IN
-  → team=general_support, escalate=True                          ← BUT WAIT...
+  inputs: category=account, priority=medium, is_ambiguous=True   ← PASSED IN
+  → team=account_mgmt, escalate=False                            ← WRONG: ambiguous ticket not escalated
 ```
 
-**Actually observed in the broken system:**
+TKT-016 and TKT-018 also reach the router with `is_ambiguous=True` but are escalated anyway, because the
+specialist rates them `urgent` and the router escalates on high or urgent priority. TKT-017 and TKT-020
+are not escalated either, but there the first classification already said `is_ambiguous=False` and
+`priority=medium`, so those two come from Bug 2, not Bug 1.
 
-```
-Step 3: route_ticket
-  inputs: category=general, priority=medium, is_ambiguous=True
-  → team=general_support, escalate=False                         ← WRONG
-```
+The tracer flags the TKT-019 pattern as `IGNORED FIELD`: `is_ambiguous=True` in the route inputs and
+`escalate=False` in its output.
 
 **The `is_ambiguous` field IS passed in the route_args dict** (the runner correctly
 builds `route_args` with `is_ambiguous=True`). But inside `execute_route_ticket()`,
@@ -83,7 +83,7 @@ For ticket TKT-005 ("Can't log in — password reset email never arrives"):
 ```
 Ground truth:  priority = urgent
 Broken output: priority = medium    ← WRONG
-Fixed output:  priority = high      ← CORRECT (close enough — login != system-down)
+Fixed output:  priority = urgent    ← CORRECT (hard deadline stated in the ticket)
 ```
 
 The pattern is systematic: the broken system assigns "medium" to almost all

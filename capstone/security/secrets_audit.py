@@ -17,6 +17,10 @@ import os
 import re
 import sys
 
+if sys.platform == "win32" and hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 CAPSTONE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -36,11 +40,13 @@ _SKIP_FILES = {"secrets_audit.py", "payloads.py", ".env"}  # Don't flag ourselve
 
 
 def check_env_file_exists() -> tuple[bool, str]:
-    """Check that a .env file exists at the project root."""
+    """Check secrets are kept in .env; a missing .env is fine in mock mode if .env.example exists."""
     env_path = os.path.join(PROJECT_ROOT, ".env")
     if os.path.exists(env_path):
         return True, f"✓ .env file exists at {env_path}"
-    return False, f"✗ No .env file found at {env_path}"
+    if os.path.exists(os.path.join(PROJECT_ROOT, ".env.example")):
+        return True, "✓ No .env (mock mode); .env.example is present as the template"
+    return False, f"✗ Neither .env nor .env.example found at {PROJECT_ROOT}"
 
 
 def check_gitignore_includes_env() -> tuple[bool, str]:
@@ -61,7 +67,7 @@ def check_env_has_api_key() -> tuple[bool, str]:
     """Check that .env contains ANTHROPIC_API_KEY."""
     env_path = os.path.join(PROJECT_ROOT, ".env")
     if not os.path.exists(env_path):
-        return False, "✗ No .env file to check"
+        return True, "✓ No .env to check (mock mode)"
 
     with open(env_path, "r", encoding="utf-8") as f:
         content = f.read()

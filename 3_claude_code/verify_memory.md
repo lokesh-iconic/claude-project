@@ -68,7 +68,7 @@ This confirms your settings files are being read.
 Type `/` and start typing `summarize`. You should see:
 
 ```
-/project:summarize-changes
+/summarize-changes
 ```
 
 in the autocomplete list. This confirms the custom command in
@@ -93,7 +93,7 @@ in the autocomplete list. This confirms the custom command in
 
 1. Check the file is at `.claude/commands/<name>.md`
 2. The command name comes from the filename (without `.md`)
-3. Project commands appear as `/project:<name>` in the picker
+3. Project commands appear as `/<name>` in the picker
 
 ### Auto memory issues
 

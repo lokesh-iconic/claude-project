@@ -53,11 +53,11 @@ def main():
     print(f"{'─'*70}")
 
     all_good = True
-    if s["dropped_fields"] > 0:
-        print(f"\n  ❌ Bug 1 NOT FIXED: {s['dropped_fields']} dropped field(s) remain.")
+    if s["dropped_fields"] > 0 or s["ignored_fields"] > 0:
+        print(f"\n  ❌ Bug 1 NOT FIXED: {s['dropped_fields']} dropped and {s['ignored_fields']} ignored field(s) remain.")
         all_good = False
     else:
-        print(f"\n  ✅ Bug 1 FIXED: No dropped fields. is_ambiguous flows correctly")
+        print(f"\n  ✅ Bug 1 FIXED: No dropped or ignored fields. is_ambiguous flows correctly")
         print(f"     from classification through routing.")
 
     if s["priority_mismatches"] > 0:

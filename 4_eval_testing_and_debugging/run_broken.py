@@ -54,11 +54,11 @@ def main():
     print("  DIAGNOSIS POINTERS:")
     print(f"{'─'*70}")
 
-    if s["dropped_fields"] > 0:
-        print(f"\n  🔴 BUG 1 SIGNAL: {s['dropped_fields']} ticket(s) had fields dropped")
-        print(f"     between classification and routing. The is_ambiguous flag was")
-        print(f"     present in classifier output but missing in routing input.")
-        print(f"     → This is an INTEGRATION-LAYER bug (data passing between tools).")
+    if s["ignored_fields"] > 0 or s["dropped_fields"] > 0:
+        print(f"\n  🔴 BUG 1 SIGNAL: {s['ignored_fields']} ticket(s) reached the router with")
+        print(f"     is_ambiguous=True but were not escalated; {s['dropped_fields']} had the flag dropped")
+        print(f"     before routing. The router does not act on the signal it receives.")
+        print(f"     → This is an INTEGRATION-LAYER bug (code in the tool, not the prompt).")
 
     if s["priority_mismatches"] > 0:
         print(f"\n  🔴 BUG 2 SIGNAL: {s['priority_mismatches']} ticket(s) had wrong priority")
@@ -68,7 +68,8 @@ def main():
 
     if s["escalation_failures"] > 0:
         print(f"\n  🟡 SECONDARY: {s['escalation_failures']} ambiguous ticket(s) were not")
-        print(f"     escalated during routing. This is a CONSEQUENCE of Bug 1.")
+        print(f"     escalated during routing. Bug 1 explains the ones that carried")
+        print(f"     is_ambiguous=True; the rest were also rated too low by Bug 2.")
 
     print(f"\n{'='*70}\n")
 

@@ -11,13 +11,13 @@ Rather than using Claude Code casually, operate it deliberately: configure the C
 ```
 3_claude_code/
 ├── README.md                               ← You are here
-├── validate_setup.py                       ← Run this to validate the configuration
+├── validate_setup.py                       ← Run this to validate the configuration (templates in this folder)
 ├── CLAUDE.md                               ← Project-level CLAUDE.md
 ├── sample_subfolder/
 │   └── CLAUDE.md                           ← Directory-level CLAUDE.md (different conventions)
 ├── .claude/
 │   ├── settings.json                       ← Shared project settings
-│   ├── settings.local.json                 ← Personal local settings (gitignored)
+│   ├── settings.local.json                 ← Empty example for personal local overrides
 │   └── commands/
 │       └── summarize-changes.md            ← Custom slash command
 ├── scripts/
@@ -29,12 +29,12 @@ Rather than using Claude Code casually, operate it deliberately: configure the C
 ## Quick Start
 
 ```bash
-# From the claude_project root directory:
+# From the repository root:
 
 # 1. Install dependencies
 uv sync
 
-# 2. Validate the entire setup (checks all config files, settings, commands)
+# 2. Validate the templates (checks all config files, settings, commands; a missing API key is reported as mock mode, not a failure)
 uv run python .\3_claude_code\validate_setup.py
 
 # 3. Validate and also test headless mode with a live Claude Code call
@@ -43,7 +43,7 @@ uv run python .\3_claude_code\validate_setup.py --headless
 
 ## Setup (Activating the Configuration)
 
-To actually use these config files with Claude Code, copy them to the repo root:
+The files in this folder are **templates**. Claude Code reads `CLAUDE.md` and `.claude/` from the repository root (and from directories it works in), so activate them by copying them there. The root `.gitignore` ignores `/.claude/`, so decide deliberately whether to commit the copies:
 
 ```bash
 copy 3_claude_code\CLAUDE.md .\CLAUDE.md
@@ -74,7 +74,7 @@ claude
 |------|-------------|----------------|
 | 1 | Initialize the repository for Claude Code and configure settings.json | [`.claude/settings.json`](.claude/settings.json) — permissions (allow/deny), [`.claude/settings.local.json`](.claude/settings.local.json) — local overrides |
 | 2 | Create a project-level CLAUDE.md, then a directory-level CLAUDE.md for one subfolder with different local conventions | [`CLAUDE.md`](CLAUDE.md) (project conventions) + [`sample_subfolder/CLAUDE.md`](sample_subfolder/CLAUDE.md) (agent-specific rules) |
-| 3 | Create a custom slash command for a task you'd otherwise repeat manually | [`.claude/commands/summarize-changes.md`](.claude/commands/summarize-changes.md) — `/project:summarize-changes` |
+| 3 | Create a custom slash command for a task you'd otherwise repeat manually | [`.claude/commands/summarize-changes.md`](.claude/commands/summarize-changes.md) — `/summarize-changes` |
 | 4 | Run a task in headless mode (-p) and capture the output programmatically | [`scripts/headless_summary.py`](scripts/headless_summary.py) (Python) + [`scripts/headless_summary.ps1`](scripts/headless_summary.ps1) (PowerShell) |
 | 5 | Use /memory to confirm which configuration files are actually loaded | [`verify_memory.md`](verify_memory.md) — step-by-step guide using `/memory`, `/context`, `/status` |
 
@@ -89,15 +89,18 @@ Shared project settings committed to version control so teammates inherit them:
 ```json
 {
   "permissions": {
-    "allow": ["Bash(uv sync)", "Bash(uv run *)", "Bash(pytest *)", "Bash(git log *)"],
-    "deny": ["Read(./.env)", "Read(./.env.*)"]
+    "allow": [
+      "Bash(uv sync)", "Bash(uv run *)", "Bash(uv add *)", "Bash(pytest *)",
+      "Bash(git log *)", "Bash(git diff *)", "Bash(git status)", "Bash(git show *)"
+    ],
+    "deny": ["Read(./.env)", "Read(./.env.*)", "Read(1_agents_and_workflows/.env)"]
   }
 }
 ```
 
 **File**: [`.claude/settings.local.json`](.claude/settings.local.json)
 
-Personal local settings (gitignored) — for per-developer sandbox URLs, testing overrides, etc.
+Personal local settings, committed here only as an empty example — for per-developer sandbox URLs, testing overrides, etc. In a real repository this file is gitignored.
 
 ### 2. CLAUDE.md Hierarchy (Project + Directory)
 
@@ -118,7 +121,7 @@ Two CLAUDE.md files demonstrate the scoping hierarchy:
 
 **File**: [`.claude/commands/summarize-changes.md`](.claude/commands/summarize-changes.md)
 
-A reusable command accessible as `/project:summarize-changes` that replaces manually running `git log` and interpreting diffs. It:
+A reusable command accessible as `/summarize-changes` that replaces manually running `git log` and interpreting diffs. It:
 
 1. Runs `git log --oneline -20` to get recent commits
 2. Runs `git diff --stat HEAD~5` for changed files
@@ -172,7 +175,7 @@ CLAUDE.md files persist across sessions — they're read at the start of every c
 
 ### Why a Custom Command Instead of Typing the Prompt
 
-The `/project:summarize-changes` command encapsulates a multi-step workflow (git log → git diff → summarize → format). Typing it manually each time is:
+The `/summarize-changes` command encapsulates a multi-step workflow (git log → git diff → summarize → format). Typing it manually each time is:
 - Error-prone (you forget a step)
 - Inconsistent (different phrasing gets different results)
 - Not shareable (teammates can't reuse your prompt)
@@ -189,19 +192,19 @@ Interactive Claude Code is for development. Headless mode (`-p`) is for automati
 
 ### Settings: allow vs. deny
 
-The `allow` list pre-approves safe, repeatable commands (`uv sync`, `pytest`, `git log`) so Claude doesn't ask permission every time. The `deny` list blocks `.env` files regardless of what Claude decides to do — a hard enforcement that prompts can't override.
+The `allow` list pre-approves safe, repeatable commands (`uv sync`, `uv run`, `pytest`, read-only `git` commands) so Claude doesn't ask permission every time. The `deny` list blocks `.env` files regardless of what Claude decides to do — a hard enforcement that prompts can't override.
 
 ## Self-Check
 
 | Question | Answer |
 |----------|--------|
-| Does a fresh clone of the repo pick up your project-level CLAUDE.md automatically? | **Yes** — `CLAUDE.md` at the repo root is read automatically at session start by Claude Code. No manual configuration needed. The `validate_setup.py` script verifies this file exists and has the expected content. |
-| Does the directory-level CLAUDE.md apply only within that directory, not bleed into the rest of the repo? | **Yes** — `sample_subfolder/CLAUDE.md` contains agent-specific conventions (hook naming, subagent patterns) that only activate when Claude reads files inside that subdirectory. The project-level rules still apply simultaneously, but directory rules supplement rather than override. Verify with `/context` command. |
+| Does a fresh clone of the repo pick up your project-level CLAUDE.md automatically? | **After the one-time copy in [Setup](#setup-activating-the-configuration)** — a `CLAUDE.md` at the repo root is read automatically at session start. The template lives in `3_claude_code/`, so a fresh clone has no root `CLAUDE.md` until it is copied. `validate_setup.py` verifies the template exists and has the expected sections. |
+| Does the directory-level CLAUDE.md apply only within that directory, not bleed into the rest of the repo? | **Yes, once copied into the target directory** — `sample_subfolder/CLAUDE.md` contains agent-specific conventions (hook naming, subagent patterns); the Setup commands copy it to `1_agents_and_workflows/CLAUDE.md`, where it loads only when Claude reads files in that directory. Project-level rules still apply simultaneously, and directory rules supplement rather than override. Verify with `/context`. |
 | Does your headless-mode run complete without waiting on any interactive input? | **Yes** — both `scripts/headless_summary.py` and `scripts/headless_summary.ps1` use `claude -p "..."` which runs non-interactively. The `-p` flag sends the prompt and exits without user interaction. Output is captured programmatically via `subprocess`. |
 
 ## Mock vs. Live Mode
 
-All scripts work without an API key. Claude Code uses its own authentication (configured during `claude` setup). The headless scripts capture whatever output Claude Code produces.
+The validator works without an API key (it reports mock mode). Claude Code uses its own authentication (configured during `claude` setup), so the headless scripts need a working `claude` CLI but no `ANTHROPIC_API_KEY`.
 
 To run in **live mode**:
 

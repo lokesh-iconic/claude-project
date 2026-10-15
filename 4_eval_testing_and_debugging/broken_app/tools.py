@@ -166,7 +166,7 @@ def execute_classify_ticket(args: dict, client=None) -> dict:
 
     # Mock mode
     text = (args.get("subject", "") + " " + args.get("body", "")).lower()
-    if any(w in text for w in ["nothing works", "frustrated", "broken", "nobody", "fwd:", "re: re:"]):
+    if any(w in text for w in ["nothing works", "frustrated", "broken", "nobody", "fwd:", "re: re:", "quiero", "necesito"]):
         return {"category": "general", "priority": "high", "confidence": 0.45,
                 "reasoning": "Vague complaint spanning multiple areas", "is_ambiguous": True}
     elif any(w in text for w in ["billing", "charged", "invoice", "refund", "promo", "payment"]):

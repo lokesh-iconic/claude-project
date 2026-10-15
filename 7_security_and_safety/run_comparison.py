@@ -24,6 +24,7 @@ from payloads import get_all_payloads
 from vulnerable_app.summarizer import VulnerableSummarizer
 from hardened_app.summarizer import HardenedSummarizer
 from secrets_audit import run_full_audit
+from layer_checks import run_layer_checks
 
 
 def main():
@@ -105,6 +106,13 @@ def main():
             fname = os.path.basename(file_result["file"])
             print(f"  ⚠  {fname}:{issue['line']} — {issue['issue']}")
 
+    # ── Per-layer checks ──
+    print(f"\n  {'=' * 66}")
+    print(f"  PER-LAYER CHECKS (each layer tested with its own input)")
+    print(f"  {'=' * 66}\n")
+
+    layer_results = run_layer_checks()
+
     # ── Guardrail enforcement type ──
     print(f"\n  {'=' * 66}")
     print(f"  GUARDRAIL ENFORCEMENT ANALYSIS")
@@ -145,9 +153,11 @@ def main():
         print(f"     Vulnerable: {vuln_secrets} secrets, Hardened: {hard_secrets} secrets")
 
     print(f"\n  3. Is guardrail enforcement deterministic or probabilistic?")
-    print(f"     PRIMARY defense: DETERMINISTIC (regex hooks in code)")
-    print(f"     SECONDARY defense: PROBABILISTIC (prompt-based isolation)")
-    print(f"     This matches the failure severity — critical actions are code-enforced.")
+    print(f"     DETERMINISTIC (code): regex pre-process hook, content policy, identity/permission checks")
+    print(f"     PROBABILISTIC (prompt): input isolation, role separation")
+    print(f"     The regex hook only recognises known phrasings; the per-layer checks above show it")
+    print(f"     misses a paraphrase. The controls that bound the damage are the output policy and")
+    print(f"     the identity/permission checks on consequential actions.")
 
     print(f"\n{'=' * 70}\n")
 
@@ -175,6 +185,12 @@ def main():
         f.write(f"- Hardcoded secrets (vulnerable): {vuln_secrets}\n")
         f.write(f"- Hardcoded secrets (hardened): {hard_secrets}\n")
 
+        f.write(f"\n## Per-Layer Checks\n\n")
+        f.write(f"| Layer | Result | Detail |\n")
+        f.write(f"|-------|--------|--------|\n")
+        for r in layer_results:
+            f.write(f"| {r['layer']} | {'OK' if r['passed'] else 'FAIL'} | {r['detail']} |\n")
+
         f.write(f"\n## Guardrail Types\n\n")
         f.write(f"| Layer | Type | Enforcement |\n")
         f.write(f"|-------|------|-------------|\n")
@@ -185,8 +201,9 @@ def main():
 
     print(f"  Report saved to: {report_path}\n")
 
-    return comparison
+    return comparison, layer_results
 
 
 if __name__ == "__main__":
-    main()
+    _, checks = main()
+    sys.exit(0 if all(r["passed"] for r in checks) else 1)

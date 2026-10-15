@@ -16,6 +16,10 @@ import sys
 import os
 import time
 
+if sys.platform == "win32" and hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+    sys.stderr.reconfigure(encoding="utf-8")
+
 # Ensure project root is importable
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
@@ -161,11 +165,11 @@ def main():
 
     all_passed = run_all_evals(cases)
 
-    # Also run seeded bug verification
+    # Also run seeded bug verification (Bug 1 must be fixed, Bug 2 must be detected)
     print()
-    run_bug_verification()
+    bugs_as_intended = run_bug_verification()
 
-    sys.exit(0 if all_passed else 1)
+    sys.exit(0 if all_passed and bugs_as_intended else 1)
 
 
 if __name__ == "__main__":
