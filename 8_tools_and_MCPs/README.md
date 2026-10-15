@@ -162,26 +162,13 @@ Full tradeoff analysis: [`comparison.md`](comparison.md)
 |----------|--------|
 | If another team wanted to reuse this capability in a different application, which of your three implementations could they actually reuse without copying code? | **MCP Server** — any MCP-compatible client connects to it without copying code or adding Python to their stack. **Skill** — reusable within Claude Code by referencing the SKILL.md path. **Custom Tool** — requires copying Python files into the new application. |
 | Does your MCP server's error handling follow the same structured-error pattern (category, retryable, description) as a well-designed custom tool? | **Yes** — all three implementations share `error_model.py`. The MCP server returns `{"error": {"category": "not_found", "retryable": false, "description": "..."}}` — identical to the custom tool and skill. |
-| Could you defend your final choice to a technical reviewer in two sentences? | **For a single-team internal lookup, use a Custom Tool** — it's the fastest to build, has no extra dependencies, and the structured error handling is identical. **Switch to MCP when a second team, a non-Python client, or a different application needs access, or when the data is shared reference material rather than tightly coupled to one agent** — that's when the server's process isolation and protocol standardization justify the setup cost. (The capstone applies this rule: order lookup is a custom tool, the shared knowledge base is an MCP server.) |
+| Could you defend your final choice to a technical reviewer in two sentences? | **For a single-team internal lookup, use a Custom Tool** — it's the fastest to build, has no extra dependencies, and the structured error handling is identical. **Switch to MCP when a second team, a non-Python client, or a different application needs access, or when the data is shared reference material rather than tightly coupled to one agent** — that's when the server's process isolation and protocol standardization justify the setup cost. (The capstone follows the same split: order lookup is a custom tool, and the shared knowledge base is also offered as a standalone MCP server.) |
 
 ## Mock vs. Live Mode
 
-All scripts run in **mock mode** by default (no API key needed):
-- The custom tool's mock agent loop uses keyword matching for tool selection
-- The skill script and MCP server operate on the shared database directly
-- Results are deterministic and identical across runs
+This module has no live-API path and needs no API key:
+- The custom tool's mock agent loop (`run_agent_query`) picks the tool with keyword matching and runs it once; in a real application the model would make that `tool_use` decision, using the schemas in `tool_definitions.py`.
+- The skill script and MCP server operate on the shared database directly.
+- Results are deterministic and identical across runs.
 
-This module focuses on the three different *interfaces* (JSON schema, CLI script, MCP protocol) wrapping the same underlying capability. The tool definitions, schemas, and error patterns work identically in both modes.
-
-To run the custom tool runner in **live mode** (where the Anthropic API selects which tool to call instead of keyword matching):
-
-1. Ensure `ANTHROPIC_API_KEY` is set in the `.env` file at the project root (or as an environment variable)
-2. Optionally set `CLAUDE_MODEL` to override the default model (defaults to `claude-sonnet-4-6`)
-3. Add the `--live` flag:
-
-```bash
-uv run python .\8_tools_and_MCPs\custom_tool\runner.py --live
-uv run python .\8_tools_and_MCPs\run_all.py --live
-```
-
-The skill and MCP server runners don't require an API key — they execute the inventory operations directly. The MCP server requires the `mcp` SDK (`uv add mcp`), which is already installed as a project dependency.
+The module focuses on the three different *interfaces* (JSON schema, CLI script, MCP protocol) wrapping the same underlying capability. The MCP implementation requires the `mcp` SDK, which is already a project dependency.

@@ -49,7 +49,7 @@ uv run python capstone/security/secrets_audit.py
 | **5 — Model Selection** | Per-task model routing (Haiku vs Sonnet) with cost tracking and caching | `models/router.py`, `models/cost_tracker.py` |
 | **6 — Prompt & Context** | 3-stage context pruning/compaction + defensive JSON parsing | `context/manager.py` |
 | **7 — Security** | Dual-layer guardrails (pre + post processing) + secrets audit | `security/guardrails.py`, `security/secrets_audit.py` |
-| **8 — Tools & MCP** | Custom tool (order/account lookup) + MCP server (knowledge base) | `agent/tools.py`, `data/mcp_server.py` |
+| **8 — Tools & MCP** | Custom tools (order/account lookup, knowledge-base search, escalation) + a standalone MCP server over the knowledge base (the assistant calls the search function directly) | `agent/tools.py`, `data/mcp_server.py` |
 
 ## Architecture
 
