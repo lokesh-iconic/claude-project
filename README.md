@@ -29,17 +29,6 @@ deterministic canned responses, and to switch to **live mode** automatically whe
 `ANTHROPIC_API_KEY` is set (copy `.env.example` to `.env` and fill it in). See each
 module's own README for details, including which parts of a module have a live mode.
 
-## Intentionally Flawed Code
-
-Some parts of the repository are flawed on purpose because the exercise is to find, trace,
-or defend against the flaw:
-
-| Where | What is deliberate |
-|-------|--------------------|
-| `4_eval_testing_and_debugging/broken_app/` | An integration bug (`is_ambiguous` ignored when routing) and a vague system prompt without a priority rubric. `fixed_app/` differs from it only in those two places. |
-| `7_security_and_safety/vulnerable_app/` | Untrusted text pasted into the prompt, no-op hooks, two hardcoded fake secrets, and actions with no access control. |
-| `capstone/eval/seeded_bugs.py` | Bug 1 (model-routing override) is fixed and guarded by an eval; Bug 2 (uppercase priority not normalized) is left in the code so the verification can detect it. |
-
 ## What Is the Anthropic SDK, and Why Is It Used?
 
 The **Anthropic SDK** is Anthropic's official Python library (the `anthropic` package,
